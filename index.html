@@ -34,7 +34,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
 
     <!-- Configuración -->
     <script src="config.js"></script>
@@ -815,8 +815,8 @@
         </div>
         <div class="product-grid" id="pos-product-grid"></div>
 
-        <!-- NUEVO BOTÓN ESCÁNER FLOTANTE -->
-        <div class="scanner-fab" onclick="escanearCodigoBarras()">
+        <!-- BOTÓN ESCÁNER FLOTANTE (Invoca la cámara de Dynamsoft) -->
+        <div class="scanner-fab" onclick="abrirScanner()">
             <i class="fa-solid fa-barcode"></i>
         </div>
 
@@ -1181,20 +1181,29 @@
         </div>
     </div>
 
-    <!-- MODAL ESCÁNER DE CÁMARA -->
+    <!-- MODAL ESCÁNER DE CÁMARA (FOTO MANUAL) -->
     <div class="modal-overlay" id="modal-scanner">
-        <div class="modal-content">
+        <div class="modal-content" style="height: 85%; display: flex; flex-direction: column;">
             <div class="modal-header">
-                <h3>Escanear Producto</h3>
+                <h3>Enfoca y Captura</h3>
                 <button class="close-btn" onclick="cerrarScanner()"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <div class="modal-body-scroll" style="display: flex; flex-direction: column; align-items: center;">
-                <!-- Aquí se renderiza la cámara -->
-                <div id="reader"
-                    style="width: 100%; max-width: 400px; border-radius: 16px; overflow: hidden; margin-bottom: 20px;">
+            <div class="modal-body-scroll"
+                style="display: flex; flex-direction: column; align-items: center; flex: 1; padding: 0;">
+
+                <!-- Contenedor del video -->
+                <div
+                    style="position: relative; width: 100%; height: 60vh; background: #000; border-radius: 16px; overflow: hidden; margin-bottom: 20px;">
+                    <video id="video-scanner" style="width: 100%; height: 100%; object-fit: cover;" playsinline
+                        autoplay></video>
                 </div>
 
-                <button class="secondary" onclick="cerrarScanner()"><i class="fa-solid fa-ban"></i> Cancelar</button>
+                <!-- Botón para tomar la foto -->
+                <button onclick="tomarFotoYAnalizar()"
+                    style="width: 80%; padding: 15px; font-size: 1.1rem; border-radius: 30px; box-shadow: 0 4px 15px rgba(251, 191, 36, 0.4);">
+                    <i class="fa-solid fa-camera"></i> Capturar Código
+                </button>
+
             </div>
         </div>
     </div>
@@ -1530,42 +1539,94 @@
             }, 200); // 200ms para asegurar que el modal ya animó su subida
         }
 
-        // --- ESCÁNER DE CÓDIGO DE BARRAS CON CÁMARA ---
-        let html5QrCode = null;
+        // --- ESCÁNER DE CÓDIGO DE BARRAS POR CAPTURA MANUAL (ZXing) ---
+        let videoStream = null;
+        let codeReader = new ZXing.BrowserMultiFormatReader();
 
-        function escanearCodigoBarras() {
+        function abrirScanner() {
             document.getElementById('modal-scanner').classList.add('active');
+            const videoEl = document.getElementById('video-scanner');
 
-            if (!html5QrCode) {
-                html5QrCode = new Html5Qrcode("reader");
-            }
-
-            // Configuración: 10 cuadros por segundo y un área de lectura rectangular clásica de código de barras
-            const config = { fps: 10, qrbox: { width: 250, height: 100 } };
-
-            // Iniciar usando la cámara trasera (environment)
-            html5QrCode.start(
-                { facingMode: "environment" },
-                config,
-                (codigoLeido, decodedResult) => {
-                    // Éxito: apagar cámara, cerrar modal y buscar
-                    cerrarScanner();
-                    procesarCodigoLeido(codigoLeido);
-                },
-                (errorMessage) => {
-                    // Ignorar errores continuos de cuando la cámara está buscando y aún no lee nada
+            // Encender la cámara directamente con la API nativa del navegador
+            navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: "environment",
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
                 }
-            ).catch((err) => {
-                cerrarScanner();
-                customAlert('Ocurrió un error al intentar acceder a la cámara. Revisa los permisos de tu navegador.', 'Error de Cámara');
-            });
+            })
+                .then(function (stream) {
+                    videoStream = stream;
+                    videoEl.srcObject = stream;
+                    videoEl.play();
+                })
+                .catch(function (err) {
+                    console.error("Error accediendo a la cámara: ", err);
+                    cerrarScanner();
+                    customAlert('No se pudo acceder a la cámara. Revisa los permisos.', 'Error');
+                });
         }
 
         function cerrarScanner() {
             document.getElementById('modal-scanner').classList.remove('active');
-            if (html5QrCode && html5QrCode.isScanning) {
-                html5QrCode.stop().catch(err => console.error("Error al detener el escáner", err));
+
+            // Apagar la cámara completamente para no gastar batería
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
             }
+            const videoEl = document.getElementById('video-scanner');
+            videoEl.srcObject = null;
+        }
+
+        function tomarFotoYAnalizar() {
+            const videoEl = document.getElementById('video-scanner');
+            if (!videoStream || videoEl.videoWidth === 0) return;
+
+            // Mostrar estado de carga
+            document.getElementById('sys-title').innerText = 'Analizando';
+            document.getElementById('sys-message').innerText = 'Procesando el código...';
+            document.getElementById('sys-input-container').style.display = 'none';
+            document.getElementById('sys-btn-cancel').style.display = 'none';
+            document.getElementById('sys-btn-ok').style.display = 'none';
+            document.getElementById('sys-modal').classList.add('active');
+
+            // 1. Crear un canvas invisible para "tomarle foto" al video actual
+            const canvas = document.createElement('canvas');
+            canvas.width = videoEl.videoWidth;
+            canvas.height = videoEl.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+
+            // 2. Convertir el canvas a una etiqueta de Imagen que ZXing pueda leer
+            const img = new Image();
+            img.src = canvas.toDataURL('image/jpeg');
+
+            img.onload = () => {
+                // 3. Analizar la imagen con la función correcta (decodeFromImageElement)
+                codeReader.decodeFromImageElement(img)
+                    .then(result => {
+                        // ÉXITO
+                        document.getElementById('sys-modal').classList.remove('active');
+                        document.getElementById('sys-btn-ok').style.display = 'block'; // Restaurar botón
+
+                        const codigoLeido = result.getText();
+                        console.log("Código detectado:", codigoLeido);
+
+                        try { navigator.vibrate(200); } catch (e) { }
+
+                        cerrarScanner();
+                        procesarCodigoLeido(codigoLeido);
+                    })
+                    .catch(err => {
+                        // FALLO EN LA LECTURA
+                        document.getElementById('sys-modal').classList.remove('active');
+                        document.getElementById('sys-btn-ok').style.display = 'block'; // Restaurar botón
+
+                        // Dejamos la cámara encendida para volver a intentar
+                        customAlert('No se detectó un código claro en la foto. Intenta acercar la cámara, evita reflejos y presiona Capturar de nuevo.', 'Código no detectado');
+                    });
+            };
         }
 
         function procesarCodigoLeido(codigo) {
@@ -1582,12 +1643,19 @@
                 }
             }
 
-            // Validar existencia y proceder
+            // Si el producto no existe
             if (!dbKeyEncontrada) {
-                return customAlert(`El código escaneado (${codigo}) no se encuentra registrado en el inventario.`, 'Producto no encontrado');
+                const searchInput = document.getElementById('search-prod');
+                if (searchInput) {
+                    searchInput.value = codigo;
+                    filtrarProductosPOS();
+                }
+                return customAlert(`Se leyó el código: ${codigo}\n\nPero no se encuentra en el inventario.`, 'No encontrado');
             }
 
-            // Abrir el modal del producto correspondiente validando stock
+            // Si el producto SÍ existe
+            document.getElementById('search-prod').value = '';
+            filtrarProductosPOS();
             seleccionarProductoPOS(dbKeyEncontrada);
         }
 
