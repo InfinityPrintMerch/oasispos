@@ -66,6 +66,13 @@
             -moz-user-select: none;
             -ms-user-select: none;
             user-select: none;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
         /* Reactivarlo SOLO en los campos donde realmente vas a escribir */
@@ -78,16 +85,6 @@
             user-select: auto;
         }
 
-        body {
-            background-color: var(--bg-base);
-            color: var(--text-main);
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
         /* APP BAR SUPERIOR */
         .app-bar {
             display: none;
@@ -95,8 +92,8 @@
             top: 0;
             left: 0;
             width: 100%;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
+            background: #FFFFFF;
+            /* Color sólido adaptado a la barra de estado del teléfono */
             padding: env(safe-area-inset-top, 15px) 20px 10px 20px;
             z-index: 100;
             border-bottom: 1px solid var(--border);
@@ -113,6 +110,10 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            flex: 1;
+            /* Permite que el área de usuario tome el espacio disponible */
+            min-width: 0;
+            /* Crítico para que el truncado funcione con Flexbox */
         }
 
         .app-bar-user img {
@@ -121,17 +122,28 @@
             border-radius: 50%;
             object-fit: cover;
             background: var(--bg-base);
+            flex-shrink: 0;
         }
 
         .app-bar-user-info {
             display: flex;
             flex-direction: column;
+            flex: 1;
+            min-width: 0;
+            /* Crítico para que el truncado funcione */
         }
 
         .app-bar-name {
             font-size: 0.9rem;
             font-weight: 600;
             color: var(--text-main);
+            white-space: nowrap;
+            /* Evita que el texto baje de línea */
+            overflow: hidden;
+            /* Oculta lo que se desborde */
+            text-overflow: ellipsis;
+            /* Pone los puntos suspensivos */
+            display: block;
         }
 
         .app-bar-role {
@@ -141,6 +153,9 @@
 
         .app-bar-page {
             text-align: right;
+            flex-shrink: 0;
+            /* Evita que la fecha y título se aplasten por un nombre largo */
+            margin-left: 10px;
         }
 
         .app-bar-date {
@@ -148,6 +163,8 @@
             color: var(--text-muted);
             font-weight: 500;
             text-transform: capitalize;
+            line-height: 1.2;
+            /* Separación más estética al tener dos renglones */
         }
 
         .app-bar-title {
@@ -162,9 +179,9 @@
             flex: 1;
             width: 100%;
             padding: 20px;
-            /* Se aumentó de 80px a 110px para librar la barra superior en móviles */
-            padding-top: calc(110px + env(safe-area-inset-top, 0px));
-            padding-bottom: 100px;
+            /* Cálculo corregido: margen adaptable según la barra para evitar espacios blancos feos */
+            padding-top: calc(75px + env(safe-area-inset-top, 15px));
+            padding-bottom: 140px;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
         }
@@ -215,7 +232,6 @@
             outline: none;
         }
 
-        /* Mejora en el estilo de Dropdowns */
         select {
             appearance: none;
             background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394A3B8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
@@ -403,10 +419,10 @@
             width: 60px;
         }
 
-        /* TICKET FAB */
+        /* TICKET FAB - Elevado para que no tape el navbar */
         .ticket-fab-bar {
             position: fixed;
-            bottom: calc(85px + env(safe-area-inset-bottom, 0px));
+            bottom: calc(100px + env(safe-area-inset-bottom, 0px));
             left: 5%;
             width: 90%;
             background: var(--text-main);
@@ -426,8 +442,7 @@
             font-size: 1.15rem;
         }
 
-        /* LOGIN CORREGIDO (CENTRADOS) */
-        /* LOGIN CORREGIDO (CENTRADOS) */
+        /* LOGIN */
         #view-login {
             justify-content: center;
             align-items: center;
@@ -709,8 +724,6 @@
             border-radius: 50%;
         }
 
-        /* Estilo circular tipo Google */
-
         /* LISTA MOVIMIENTOS CAJA */
         .movimiento-item {
             display: flex;
@@ -733,7 +746,7 @@
             </div>
         </div>
         <div class="app-bar-page">
-            <div id="ab-date" class="app-bar-date">Lunes 01, Enero 2026</div>
+            <div id="ab-date" class="app-bar-date">Lunes 01,<br>Enero 2026</div>
             <div id="ab-title" class="app-bar-title">Venta</div>
         </div>
     </div>
@@ -779,39 +792,11 @@
     <div id="view-products" class="view-container">
         <div
             style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 10px;">
-            <div class="input-group" style="margin-bottom: 0; flex: 1;">
+            <div class="input-group" style="margin-bottom: 0; flex: 1; min-width: 0;">
                 <i class="fa-solid fa-magnifying-glass"></i>
                 <input type="text" id="search-inv" placeholder="Buscar en inventario..." onkeyup="filtrarInventario()">
             </div>
             <button class="icon-only" onclick="prepararFormularioProducto()"><i class="fa-solid fa-plus"></i></button>
-        </div>
-
-        <div id="form-producto" class="card" style="display: none; flex-direction: column; gap: 10px;">
-            <h3 id="prod-form-title" style="margin-bottom: 10px; width:100%;">Nuevo Producto</h3>
-            <div class="input-group"><i class="fa-solid fa-tag"></i><input type="text" id="prod-nombre"
-                    placeholder="Nombre"></div>
-            <div class="input-group"><i class="fa-solid fa-barcode"></i><input type="text" id="prod-barcode"
-                    placeholder="Código de Barras"></div>
-            <div style="display: flex; gap: 10px; width: 100%;">
-                <div class="input-group"><i class="fa-solid fa-dollar-sign"></i><input type="number" id="prod-costo"
-                        placeholder="Costo"></div>
-                <div class="input-group"><i class="fa-solid fa-dollar-sign"></i><input type="number" id="prod-precio"
-                        placeholder="Precio"></div>
-            </div>
-            <div style="display: flex; gap: 10px; width: 100%;">
-                <div class="input-group"><i class="fa-solid fa-box"></i><input type="number" id="prod-stock"
-                        placeholder="Stock"></div>
-                <div class="input-group"><i class="fa-solid fa-boxes-stacked"></i><input type="number" id="prod-min"
-                        placeholder="Mínimo"></div>
-            </div>
-            <input type="file" id="prod-img" accept="image/*"
-                style="padding: 10px; border: none; background: transparent;">
-            <input type="hidden" id="prod-img-actual">
-            <div style="display: flex; gap: 10px; width: 100%; margin-top: 10px;">
-                <button class="secondary" onclick="document.getElementById('form-producto').style.display='none'"
-                    style="flex: 1;">Cancelar</button>
-                <button onclick="guardarProducto()" style="flex: 1;">Guardar</button>
-            </div>
         </div>
         <div id="lista-productos"></div>
     </div>
@@ -878,7 +863,7 @@
             <div class="card" id="btn-gestionar-usuarios" onclick="irAUsuarios()" style="display: none;">
                 <div style="display: flex; align-items: center; gap: 15px;">
                     <i class="fa-solid fa-users-gear" style="color: var(--primary-hover); font-size: 1.2rem;"></i>
-                    <span style="font-weight: 500;">Gestión de Usuarios</span>
+                    <span style="font-weight: 500;">Usuarios</span>
                 </div>
                 <i class="fa-solid fa-chevron-right" style="color: var(--border);"></i>
             </div>
@@ -898,7 +883,6 @@
 
     <!-- VISTA: USUARIOS (Solo Admin) -->
     <div id="view-users" class="view-container">
-        <!-- AQUÍ SE AGREGÓ margin-top: 20px; -->
         <div
             style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 20px;">
             <button class="outline" onclick="volverAAjustes()" style="width: auto; padding: 10px 15px;"><i
@@ -909,7 +893,55 @@
         </div>
         <div id="lista-usuarios"></div>
     </div>
-    <!-- MODAL USUARIO ADMIN (En lugar de form en la vista) -->
+
+    <!-- MODAL PRODUCTO -->
+    <div class="modal-overlay" id="modal-producto">
+        <div class="modal-content" style="max-height: 90vh;">
+            <div class="modal-header">
+                <h3 id="prod-form-title">Nuevo Producto</h3>
+                <button class="close-btn"
+                    onclick="document.getElementById('modal-producto').classList.remove('active')"><i
+                        class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div style="overflow-y: auto; padding-bottom: 20px;">
+                <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+                    <div style="position: relative;">
+                        <img id="prod-img-preview"
+                            src="https://ui-avatars.com/api/?name=Producto&background=E2E8F0&color=94A3B8&size=100&rounded=true"
+                            style="width: 100px; height: 100px; border-radius: var(--radius-md); object-fit: cover; border: 2px solid var(--border); cursor: pointer;"
+                            onclick="document.getElementById('input-prod-img').click()">
+                        <div
+                            style="position: absolute; bottom: -5px; right: -5px; background: var(--primary); color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; justify-content: center; align-items: center; pointer-events: none;">
+                            <i class="fa-solid fa-camera" style="font-size: 0.7rem;"></i>
+                        </div>
+                        <input type="file" id="input-prod-img" accept="image/*" style="display: none;"
+                            onchange="cargarImagenProducto(event)">
+                    </div>
+                </div>
+
+                <div class="input-group"><i class="fa-solid fa-tag"></i><input type="text" id="prod-nombre"
+                        placeholder="Nombre del producto"></div>
+                <div class="input-group"><i class="fa-solid fa-barcode"></i><input type="text" id="prod-barcode"
+                        placeholder="Código de Barras"></div>
+                <div style="display: flex; gap: 10px; width: 100%;">
+                    <div class="input-group"><i class="fa-solid fa-dollar-sign"></i><input type="number" id="prod-costo"
+                            placeholder="Costo"></div>
+                    <div class="input-group"><i class="fa-solid fa-dollar-sign"></i><input type="number"
+                            id="prod-precio" placeholder="Precio Venta"></div>
+                </div>
+                <div style="display: flex; gap: 10px; width: 100%;">
+                    <div class="input-group"><i class="fa-solid fa-box"></i><input type="number" id="prod-stock"
+                            placeholder="Stock"></div>
+                    <div class="input-group"><i class="fa-solid fa-boxes-stacked"></i><input type="number" id="prod-min"
+                            placeholder="Mínimo"></div>
+                </div>
+                <button onclick="guardarProducto()" style="margin-top: 10px;"><i class="fa-solid fa-save"></i> Guardar
+                    Producto</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL USUARIO ADMIN -->
     <div class="modal-overlay" id="modal-usuario-admin">
         <div class="modal-content" style="max-height: 90vh;">
             <div class="modal-header">
@@ -1105,7 +1137,7 @@
         const s3 = new AWS.S3({ endpoint: cloudflareR2Config.endpoint, s3ForcePathStyle: true });
 
         let empleadoActual = null; let carrito = []; let productosDB = {}; let usuariosDB = {}; let ventasDB = {};
-        let cropper; let avatarTemporal = null; let chartVentas;
+        let cropper; let avatarTemporal = null; let avatarTemporalProd = null; let chartVentas;
 
         // --- OBTENER AVATAR GENÉRICO ---
         function getAvatarUrl(nombre) {
@@ -1115,7 +1147,8 @@
         function obtenerFechaFormateada(dateObj = new Date()) {
             const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
             const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-            return `${dias[dateObj.getDay()]} ${String(dateObj.getDate()).padStart(2, '0')}, ${meses[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+            // Actualizado para usar <br> y separar la fecha en dos renglones
+            return `${dias[dateObj.getDay()]} ${String(dateObj.getDate()).padStart(2, '0')},<br>${meses[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
         }
 
         // --- NAVEGACIÓN ---
@@ -1145,7 +1178,8 @@
             document.getElementById('ab-user-img').src = img;
             document.getElementById('ab-user-name').innerText = empleadoActual.nombreCompleto;
             document.getElementById('ab-user-role').innerText = empleadoActual.rol;
-            document.getElementById('ab-date').innerText = obtenerFechaFormateada();
+            // Usamos innerHTML en lugar de innerText para que lea la etiqueta <br>
+            document.getElementById('ab-date').innerHTML = obtenerFechaFormateada();
         }
 
         // --- AUTENTICACIÓN ---
@@ -1157,7 +1191,6 @@
             db.ref('usuarios').once('value').then(snapshot => {
                 let encontrado = false;
                 snapshot.forEach(child => {
-                    // AQUÍ ESTÁ LA CORRECCIÓN: Convertimos child.val().pin a String
                     if (child.val().username === user && String(child.val().pin) === pin) {
                         empleadoActual = child.val();
                         encontrado = true;
@@ -1165,7 +1198,6 @@
                 });
 
                 if (encontrado) {
-                    // Guardamos la sesión
                     localStorage.setItem('oasis_user', user);
                     localStorage.setItem('oasis_pin', pin);
 
@@ -1178,7 +1210,6 @@
                     document.querySelector('.nav-item[data-target="pos"]').click();
                     cargarDatosEnTiempoReal();
 
-                    // Limpiamos los inputs
                     document.getElementById('login-user').value = '';
                     document.getElementById('login-pin').value = '';
                 } else customAlert('Usuario o PIN incorrectos.', 'Error de acceso');
@@ -1187,7 +1218,6 @@
 
         function cerrarSesion() {
             customConfirm('¿Seguro que deseas salir?', 'Cerrar Sesión', () => {
-                // ---> AQUÍ BORRAMOS LA SESIÓN <---
                 localStorage.removeItem('oasis_user');
                 localStorage.removeItem('oasis_pin');
 
@@ -1258,10 +1288,8 @@
 
             const updates = { nombreCompleto: nombre, pin: pin, sexo: document.getElementById('mi-sexo').value, edad: parseInt(document.getElementById('mi-edad').value) };
 
-            // Si hay nueva imagen, subirla a S3 simulado (aquí asumo que tienes tu función de subida lista)
             if (avatarTemporal) {
                 if (empleadoActual.imagen) borrarImagenAnteriorS3(empleadoActual.imagen);
-                // NOTA: Aquí iría tu lógica real s3.upload(). Simulamos guardado en Base64 por simplicidad en UI.
                 updates.imagen = avatarTemporal;
             }
 
@@ -1276,7 +1304,8 @@
         function mostrarAcercaDe() { customAlert("Oasis POS v1.0\n\nDesarrollado para simplificar tu día a día.\n\n© 2026 Todos los derechos reservados.", "Acerca de Oasis"); }
 
         // --- USUARIOS ADMIN ---
-        function irAUsuarios() { cambiarVista('users', 'Gestión de Usuarios', true); renderizarUsuariosAdmin(); }
+        // Nombre del View cambiado de 'Gestión de Usuarios' a 'Usuarios'
+        function irAUsuarios() { cambiarVista('users', 'Usuarios', true); renderizarUsuariosAdmin(); }
         function volverAAjustes() { cambiarVista('settings', 'Ajustes', true); }
 
         function renderizarUsuariosAdmin() {
@@ -1368,6 +1397,67 @@
             });
         }
 
+        // --- LÓGICA DE GESTIÓN DE PRODUCTOS ---
+        function prepararFormularioProducto() {
+            document.getElementById('prod-form-title').innerText = "Nuevo Producto";
+            ['nombre', 'barcode', 'costo', 'precio', 'stock', 'min'].forEach(id => document.getElementById(`prod-${id}`).value = '');
+            document.getElementById('prod-img-preview').src = "https://ui-avatars.com/api/?name=Producto&background=E2E8F0&color=94A3B8&size=100&rounded=true";
+            avatarTemporalProd = null;
+            document.getElementById('modal-producto').classList.add('active');
+        }
+
+        function cargarImagenProducto(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                avatarTemporalProd = event.target.result;
+                document.getElementById('prod-img-preview').src = avatarTemporalProd;
+            };
+            reader.readAsDataURL(file);
+            e.target.value = '';
+        }
+
+        function guardarProducto() {
+            const nombre = document.getElementById('prod-nombre').value.trim();
+            const barcode = document.getElementById('prod-barcode').value.trim();
+            const costo = parseFloat(document.getElementById('prod-costo').value) || 0;
+            const precio = parseFloat(document.getElementById('prod-precio').value) || 0;
+            const stock = parseInt(document.getElementById('prod-stock').value) || 0;
+            const min = parseInt(document.getElementById('prod-min').value) || 0;
+
+            if (!nombre || !barcode) return customAlert("El nombre y código de barras son obligatorios.");
+
+            const producto = {
+                nombre: nombre,
+                barcode: barcode,
+                costo: costo,
+                precio: precio,
+                stockActual: stock,
+                stockMinimo: min,
+                imagen: avatarTemporalProd || (productosDB[barcode] ? productosDB[barcode].imagen : '')
+            };
+
+            db.ref(`productos/${barcode}`).set(producto).then(() => {
+                customAlert('Producto guardado correctamente en inventario.', 'Éxito');
+                document.getElementById('modal-producto').classList.remove('active');
+            });
+        }
+
+        function editarProducto(barcode) {
+            const p = productosDB[barcode]; if (!p) return;
+            document.getElementById('prod-form-title').innerText = "Editar Producto";
+            document.getElementById('prod-nombre').value = p.nombre;
+            document.getElementById('prod-barcode').value = p.barcode;
+            document.getElementById('prod-costo').value = p.costo || 0;
+            document.getElementById('prod-precio').value = p.precio || 0;
+            document.getElementById('prod-stock').value = p.stockActual || 0;
+            document.getElementById('prod-min').value = p.stockMinimo || 0;
+            document.getElementById('prod-img-preview').src = p.imagen || getAvatarUrl(p.nombre);
+            avatarTemporalProd = null;
+            document.getElementById('modal-producto').classList.add('active');
+        }
+
         // --- CARRITO Y TICKET ---
         function agregarAlCarrito(barcode, cantidad, producto) {
             const item = carrito.find(i => i.barcode === barcode);
@@ -1411,8 +1501,6 @@
             if (pago > 0 && pago < total) return customAlert('El efectivo recibido es menor al total.');
 
             const folio = Date.now().toString(), fechaObj = new Date();
-
-            // FORZAMOS EL FORMATO D/M/YYYY PARA QUE COINCIDA CON TU BASE DE DATOS
             const fechaDB = `${fechaObj.getDate()}/${fechaObj.getMonth() + 1}/${fechaObj.getFullYear()}`;
 
             const venta = {
@@ -1444,7 +1532,7 @@
                                     <img src="${p.imagen || getAvatarUrl(p.nombre)}" style="width:50px; height:50px; border-radius:10px; object-fit:cover;">
                                     <div><strong style="color:var(--text-main); font-size:1rem;">${p.nombre}</strong><br><span style="color:var(--text-muted); font-size:0.85rem;">Stock: ${p.stockActual} | $${p.precio}</span></div>
                                 </div>
-                                <i class="fa-solid fa-pen" style="color: var(--primary); padding:10px; cursor:pointer;" onclick="customAlert('Edición pendiente de adaptar a nueva UI')"></i>
+                                <i class="fa-solid fa-pen" style="color: var(--primary); padding:10px; cursor:pointer;" onclick="editarProducto('${p.barcode}')"></i>
                             </div>`;
                     });
                 }
@@ -1464,29 +1552,25 @@
 
         // --- CAJA Y GRAFICAS ---
         function calcularCorte() {
-            const fechaInput = document.getElementById('corte-fecha-input').value; // Formato YYYY-MM-DD
+            const fechaInput = document.getElementById('corte-fecha-input').value;
             if (!fechaInput) return;
 
             const dateObj = new Date(fechaInput + 'T12:00:00Z');
-            document.getElementById('fecha-corte').innerText = obtenerFechaFormateada(dateObj);
+            document.getElementById('fecha-corte').innerHTML = obtenerFechaFormateada(dateObj); // Mantiene el formato con <br>
 
-            // RECONSTRUIMOS LA FECHA PARA QUE BUSQUE "5/10/2026" Y ENCUENTRE TUS DATOS
             const fechaFiltro = `${dateObj.getDate()}/${dateObj.getMonth() + 1}/${dateObj.getFullYear()}`;
 
             let totalDia = 0; const contenedorMov = document.getElementById('lista-movimientos'); contenedorMov.innerHTML = '';
-
             let totalesSemana = [0, 0, 0, 0, 0, 0, 0];
             const inicioSemana = new Date(dateObj);
             inicioSemana.setDate(dateObj.getDate() - (dateObj.getDay() === 0 ? 6 : dateObj.getDay() - 1));
 
             Object.values(ventasDB).forEach(v => {
-                // COMPARA USANDO EL FORMATO CORRECTO
                 if (v.fecha === fechaFiltro) {
                     totalDia += v.total;
                     contenedorMov.innerHTML += `<div class="movimiento-item"><div><strong>Folio: ${v.folio.substring(v.folio.length - 5)}</strong><br><span style="font-size:0.8rem; color:var(--text-muted)">${v.hora} - ${v.cliente}</span></div><strong style="color:var(--success)">+$${v.total.toFixed(2)}</strong></div>`;
                 }
 
-                // Formato para la gráfica
                 const partesFecha = v.fecha.split('/');
                 if (partesFecha.length === 3) {
                     const vDate = new Date(`${partesFecha[2]}-${partesFecha[1].padStart(2, '0')}-${partesFecha[0].padStart(2, '0')}T12:00:00Z`);
@@ -1519,8 +1603,7 @@
         }
 
         function cerrarCaja() { customConfirm('¿Generar corte Z y cerrar turno?', 'Corte de Caja', () => { customAlert('Corte Z generado.', 'Exito'); }); }
-        function prepararFormularioProducto() { document.getElementById('form-producto').style.display = 'flex'; }
-        function guardarProducto() { customAlert("Función conservada en lógica backend."); document.getElementById('form-producto').style.display = 'none'; }
+
         // --- MANTENER SESIÓN ACTIVA ---
         function comprobarSesionGuardada() {
             const savedUser = localStorage.getItem('oasis_user');
@@ -1533,7 +1616,6 @@
             }
         }
 
-        // Ejecutar la comprobación al cargar la página
         comprobarSesionGuardada();  
     </script>
 </body>
