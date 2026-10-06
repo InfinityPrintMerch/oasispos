@@ -162,7 +162,8 @@
             flex: 1;
             width: 100%;
             padding: 20px;
-            padding-top: calc(80px + env(safe-area-inset-top, 0px));
+            /* Se aumentó de 80px a 110px para librar la barra superior en móviles */
+            padding-top: calc(110px + env(safe-area-inset-top, 0px));
             padding-bottom: 100px;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
@@ -1155,10 +1156,16 @@
 
             db.ref('usuarios').once('value').then(snapshot => {
                 let encontrado = false;
-                snapshot.forEach(child => { if (child.val().username === user && child.val().pin === pin) { empleadoActual = child.val(); encontrado = true; } });
+                snapshot.forEach(child => {
+                    // AQUÍ ESTÁ LA CORRECCIÓN: Convertimos child.val().pin a String
+                    if (child.val().username === user && String(child.val().pin) === pin) {
+                        empleadoActual = child.val();
+                        encontrado = true;
+                    }
+                });
 
                 if (encontrado) {
-                    // ---> AQUÍ GUARDAMOS LA SESIÓN <---
+                    // Guardamos la sesión
                     localStorage.setItem('oasis_user', user);
                     localStorage.setItem('oasis_pin', pin);
 
@@ -1171,7 +1178,7 @@
                     document.querySelector('.nav-item[data-target="pos"]').click();
                     cargarDatosEnTiempoReal();
 
-                    // Limpiamos los inputs por seguridad
+                    // Limpiamos los inputs
                     document.getElementById('login-user').value = '';
                     document.getElementById('login-pin').value = '';
                 } else customAlert('Usuario o PIN incorrectos.', 'Error de acceso');
