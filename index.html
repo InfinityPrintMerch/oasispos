@@ -93,7 +93,6 @@
             left: 0;
             width: 100%;
             background: #FFFFFF;
-            /* Color sólido adaptado a la barra de estado del teléfono */
             padding: env(safe-area-inset-top, 15px) 20px 10px 20px;
             z-index: 100;
             border-bottom: 1px solid var(--border);
@@ -111,9 +110,7 @@
             align-items: center;
             gap: 10px;
             flex: 1;
-            /* Permite que el área de usuario tome el espacio disponible */
             min-width: 0;
-            /* Crítico para que el truncado funcione con Flexbox */
         }
 
         .app-bar-user img {
@@ -130,7 +127,6 @@
             flex-direction: column;
             flex: 1;
             min-width: 0;
-            /* Crítico para que el truncado funcione */
         }
 
         .app-bar-name {
@@ -138,11 +134,8 @@
             font-weight: 600;
             color: var(--text-main);
             white-space: nowrap;
-            /* Evita que el texto baje de línea */
             overflow: hidden;
-            /* Oculta lo que se desborde */
             text-overflow: ellipsis;
-            /* Pone los puntos suspensivos */
             display: block;
         }
 
@@ -154,7 +147,6 @@
         .app-bar-page {
             text-align: right;
             flex-shrink: 0;
-            /* Evita que la fecha y título se aplasten por un nombre largo */
             margin-left: 10px;
         }
 
@@ -164,7 +156,6 @@
             font-weight: 500;
             text-transform: capitalize;
             line-height: 1.2;
-            /* Separación más estética al tener dos renglones */
         }
 
         .app-bar-title {
@@ -179,7 +170,6 @@
             flex: 1;
             width: 100%;
             padding: 20px;
-            /* Cálculo corregido: margen adaptable según la barra para evitar espacios blancos feos */
             padding-top: calc(75px + env(safe-area-inset-top, 15px));
             padding-bottom: 140px;
             overflow-y: auto;
@@ -503,15 +493,28 @@
             animation: fadeIn 0.2s ease;
         }
 
+        /* Corrección para que el contenido de los modales sea scrolleable en celulares */
         .modal-content {
             background: var(--bg-surface);
             width: 100%;
             max-height: 85vh;
+            /* Ocupa hasta el 85% de la pantalla */
             border-radius: 24px 24px 0 0;
             padding: 20px;
             display: flex;
             flex-direction: column;
             animation: slideUp 0.3s ease;
+            overflow: hidden;
+            /* Mantiene la estructura del modal sin desbordes de fondo */
+        }
+
+        /* El contenedor interior del modal es el que hace scroll */
+        .modal-body-scroll {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 20px;
+            /* Margen para asegurar que el teclado o gestos no tapen botones */
         }
 
         @keyframes slideUp {
@@ -531,6 +534,8 @@
             margin-bottom: 20px;
             border-bottom: 1px solid var(--border);
             padding-bottom: 15px;
+            flex-shrink: 0;
+            /* Impide que el header se achique si el contenido es grande */
         }
 
         .modal-header h3 {
@@ -896,14 +901,15 @@
 
     <!-- MODAL PRODUCTO -->
     <div class="modal-overlay" id="modal-producto">
-        <div class="modal-content" style="max-height: 90vh;">
+        <div class="modal-content">
             <div class="modal-header">
                 <h3 id="prod-form-title">Nuevo Producto</h3>
                 <button class="close-btn"
                     onclick="document.getElementById('modal-producto').classList.remove('active')"><i
                         class="fa-solid fa-xmark"></i></button>
             </div>
-            <div style="overflow-y: auto; padding-bottom: 20px;">
+            <!-- Cuerpo scrolleable del modal -->
+            <div class="modal-body-scroll">
                 <div style="display: flex; justify-content: center; margin-bottom: 20px;">
                     <div style="position: relative;">
                         <img id="prod-img-preview"
@@ -923,6 +929,9 @@
                         placeholder="Nombre del producto"></div>
                 <div class="input-group"><i class="fa-solid fa-barcode"></i><input type="text" id="prod-barcode"
                         placeholder="Código de Barras"></div>
+                <!-- Input extra para almacenar la KEY única de Firebase de forma invisible -->
+                <input type="hidden" id="prod-db-key" value="">
+
                 <div style="display: flex; gap: 10px; width: 100%;">
                     <div class="input-group"><i class="fa-solid fa-dollar-sign"></i><input type="number" id="prod-costo"
                             placeholder="Costo"></div>
@@ -943,14 +952,15 @@
 
     <!-- MODAL USUARIO ADMIN -->
     <div class="modal-overlay" id="modal-usuario-admin">
-        <div class="modal-content" style="max-height: 90vh;">
+        <div class="modal-content">
             <div class="modal-header">
                 <h3 id="user-form-title">Nuevo Usuario</h3>
                 <button class="close-btn"
                     onclick="document.getElementById('modal-usuario-admin').classList.remove('active')"><i
                         class="fa-solid fa-xmark"></i></button>
             </div>
-            <div style="overflow-y: auto; padding-bottom: 20px;">
+            <!-- Cuerpo scrolleable del modal -->
+            <div class="modal-body-scroll">
                 <div class="input-group"><i class="fa-regular fa-id-card"></i><input type="text" id="user-nombre"
                         placeholder="Nombre Completo"></div>
                 <div class="input-group"><i class="fa-regular fa-user"></i><input type="text" id="user-username"
@@ -984,15 +994,15 @@
 
     <!-- MODAL EDICIÓN PROPIO PERFIL -->
     <div class="modal-overlay" id="modal-perfil">
-        <div class="modal-content" style="max-height: 90vh;">
+        <div class="modal-content">
             <div class="modal-header">
                 <h3>Editar Mi Perfil</h3>
                 <button class="close-btn"
                     onclick="document.getElementById('modal-perfil').classList.remove('active')"><i
                         class="fa-solid fa-xmark"></i></button>
             </div>
-            <div
-                style="overflow-y: auto; padding-bottom: 20px; display: flex; flex-direction: column; align-items: center;">
+            <!-- Cuerpo scrolleable del modal -->
+            <div class="modal-body-scroll" style="display: flex; flex-direction: column; align-items: center;">
 
                 <div style="position: relative; margin-bottom: 20px;">
                     <img id="mi-avatar-preview" src=""
@@ -1018,7 +1028,8 @@
                     <div class="input-group"><i class="fa-solid fa-cake-candles"></i><input type="number" id="mi-edad"
                             placeholder="Edad"></div>
                 </div>
-                <button onclick="guardarMiPerfil()" style="margin-top: 10px;"><i class="fa-solid fa-save"></i> Guardar
+                <button onclick="guardarMiPerfil()" style="margin-top: 10px; width: 100%;"><i
+                        class="fa-solid fa-save"></i> Guardar
                     Cambios</button>
             </div>
         </div>
@@ -1038,6 +1049,49 @@
         </div>
     </div>
 
+    <!-- MODAL TICKET -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Ticket actual</h3>
+                <button class="close-btn" onclick="cerrarModalTicket()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <!-- Cuerpo scrolleable del modal de ticket -->
+            <div class="modal-body-scroll">
+                <div class="input-group" style="margin-bottom: 10px;"><i class="fa-regular fa-user"></i><input
+                        type="text" id="pos-cliente" placeholder="Nombre del cliente (Opcional)"></div>
+
+                <div id="ticket-items-container" style="margin-bottom: 15px;">
+                    <!-- Los items del ticket van aquí y scrollean junto con el resto -->
+                </div>
+
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-top: 1px solid var(--border);">
+                    <div><span style="font-size: 1.2rem; font-weight: 600;">Total</span><br><span
+                            style="font-size: 0.8rem; color: var(--text-muted);"><span id="modal-qty-count">0</span>
+                            productos</span></div>
+                    <h2 style="font-size: 1.8rem; color: var(--text-main);">$<span id="pos-total-final">0.00</span></h2>
+                </div>
+
+                <div class="input-group" style="margin-bottom: 10px;">
+                    <i class="fa-solid fa-money-bill"></i>
+                    <input type="number" id="pos-pago" placeholder="Efectivo recibido" onkeyup="calcularCambio()">
+                </div>
+                <div style="text-align: right; margin-bottom: 15px;">
+                    <span style="font-size: 0.9rem; color: var(--text-muted);">Cambio a dar:</span>
+                    <h3 style="color: var(--success);">$<span id="pos-cambio">0.00</span></h3>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button class="danger" onclick="limpiarTicket()" style="flex: 1;"><i
+                            class="fa-regular fa-trash-can"></i> Limpiar</button>
+                    <button onclick="procesarTransaccion()" style="flex: 2;"><i class="fa-solid fa-cash-register"></i>
+                        Cobrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- NAVBAR INFERIOR -->
     <div id="main-nav" class="bottom-nav">
         <div class="nav-item selected" data-target="pos" data-title="Venta">
@@ -1051,44 +1105,6 @@
         </div>
         <div class="nav-item" id="nav-settings" data-target="settings" data-title="Ajustes">
             <div class="nav-icon-wrapper"><i class="fa-solid fa-gear"></i></div><span>Ajustes</span>
-        </div>
-    </div>
-
-    <!-- MODAL TICKET -->
-    <div class="modal-overlay" id="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Ticket actual</h3>
-                <button class="close-btn" onclick="cerrarModalTicket()"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="input-group" style="margin-bottom: 10px;"><i class="fa-regular fa-user"></i><input type="text"
-                    id="pos-cliente" placeholder="Nombre del cliente (Opcional)"></div>
-            <div id="ticket-items-container" style="flex: 1; overflow-y: auto; max-height: 35vh; margin-bottom: 15px;">
-            </div>
-
-            <div
-                style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-top: 1px solid var(--border);">
-                <div><span style="font-size: 1.2rem; font-weight: 600;">Total</span><br><span
-                        style="font-size: 0.8rem; color: var(--text-muted);"><span id="modal-qty-count">0</span>
-                        productos</span></div>
-                <h2 style="font-size: 1.8rem; color: var(--text-main);">$<span id="pos-total-final">0.00</span></h2>
-            </div>
-
-            <div class="input-group" style="margin-bottom: 10px;">
-                <i class="fa-solid fa-money-bill"></i>
-                <input type="number" id="pos-pago" placeholder="Efectivo recibido" onkeyup="calcularCambio()">
-            </div>
-            <div style="text-align: right; margin-bottom: 15px;">
-                <span style="font-size: 0.9rem; color: var(--text-muted);">Cambio a dar:</span>
-                <h3 style="color: var(--success);">$<span id="pos-cambio">0.00</span></h3>
-            </div>
-
-            <div style="display: flex; gap: 10px;">
-                <button class="danger" onclick="limpiarTicket()" style="flex: 1;"><i
-                        class="fa-regular fa-trash-can"></i> Limpiar</button>
-                <button onclick="procesarTransaccion()" style="flex: 2;"><i class="fa-solid fa-cash-register"></i>
-                    Cobrar</button>
-            </div>
         </div>
     </div>
 
@@ -1147,7 +1163,6 @@
         function obtenerFechaFormateada(dateObj = new Date()) {
             const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
             const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-            // Actualizado para usar <br> y separar la fecha en dos renglones
             return `${dias[dateObj.getDay()]} ${String(dateObj.getDate()).padStart(2, '0')},<br>${meses[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
         }
 
@@ -1178,7 +1193,6 @@
             document.getElementById('ab-user-img').src = img;
             document.getElementById('ab-user-name').innerText = empleadoActual.nombreCompleto;
             document.getElementById('ab-user-role').innerText = empleadoActual.rol;
-            // Usamos innerHTML en lugar de innerText para que lea la etiqueta <br>
             document.getElementById('ab-date').innerHTML = obtenerFechaFormateada();
         }
 
@@ -1304,7 +1318,6 @@
         function mostrarAcercaDe() { customAlert("Oasis POS v1.0\n\nDesarrollado para simplificar tu día a día.\n\n© 2026 Todos los derechos reservados.", "Acerca de Oasis"); }
 
         // --- USUARIOS ADMIN ---
-        // Nombre del View cambiado de 'Gestión de Usuarios' a 'Usuarios'
         function irAUsuarios() { cambiarVista('users', 'Usuarios', true); renderizarUsuariosAdmin(); }
         function volverAAjustes() { cambiarVista('settings', 'Ajustes', true); }
 
@@ -1362,7 +1375,7 @@
         function filtrarProductosPOS() {
             const q = document.getElementById('search-prod').value.toLowerCase();
             document.querySelectorAll('.prod-item').forEach(el => {
-                const text = el.getAttribute('data-nombre').toLowerCase() + el.getAttribute('data-barcode').toLowerCase();
+                const text = el.getAttribute('data-nombre').toLowerCase() + el.getAttribute('data-dbkey').toLowerCase();
                 el.style.display = text.includes(q) ? 'flex' : 'none';
             });
         }
@@ -1376,31 +1389,54 @@
 
         function renderizarGridPOS() {
             const grid = document.getElementById('pos-product-grid'); grid.innerHTML = '';
-            Object.values(productosDB).forEach(p => {
+
+            Object.entries(productosDB).forEach(([dbKey, p]) => {
                 const imgSrc = p.imagen ? p.imagen : getAvatarUrl(p.nombre);
+
+                // Lógica para color rojo si es menor o igual al mínimo
+                const colorStock = p.stockActual <= (p.stockMinimo || 0) ? 'var(--danger)' : 'var(--text-muted)';
+
                 grid.innerHTML += `
-                    <div class="prod-item" data-nombre="${p.nombre}" data-barcode="${p.barcode}" onclick="seleccionarProductoPOS('${p.barcode}')">
-                        <img src="${imgSrc}" loading="lazy">
-                        <div class="prod-title">${p.nombre}</div>
-                        <div class="prod-price">$${p.precio.toFixed(2)}</div>
-                        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top:2px;">${p.stockActual} pz</div>
-                    </div>`;
+            <div class="prod-item" data-nombre="${p.nombre}" data-dbkey="${dbKey}" onclick="seleccionarProductoPOS('${dbKey}')">
+                <img src="${imgSrc}" loading="lazy">
+                <div class="prod-title">${p.nombre}</div>
+                <div class="prod-price">$${p.precio.toFixed(2)}</div>
+                <div style="font-size: 0.7rem; color: ${colorStock}; margin-top:2px; font-weight: 600;">${p.stockActual} pz</div>
+            </div>`;
             });
         }
 
-        function seleccionarProductoPOS(barcode) {
-            const prod = productosDB[barcode];
-            if (prod.stockActual <= 0) return customAlert('Este producto se ha quedado sin existencias.', 'Sin stock');
-            customPrompt(`¿Cantidad a agregar de ${prod.nombre}?`, "1", "Añadir", (qty) => {
+        function seleccionarProductoPOS(dbKey) {
+            const prod = productosDB[dbKey];
+            if (!prod) return customAlert('No se pudo encontrar este producto en la base de datos.');
+
+            // Verificar si ya hay de este producto en el ticket para restarlo de lo disponible
+            const itemEnCarrito = carrito.find(i => i.dbKey === dbKey);
+            const cantidadActualEnCarrito = itemEnCarrito ? itemEnCarrito.cantidad : 0;
+            const cantidadDisponible = prod.stockActual - cantidadActualEnCarrito;
+
+            if (cantidadDisponible <= 0) {
+                return customAlert(`Ya has agregado todo el stock disponible (${prod.stockActual}) al ticket.`, 'Stock Agotado');
+            }
+
+            customPrompt(`¿Cantidad a agregar? (Disponible: ${cantidadDisponible})`, "1", "Añadir " + prod.nombre, (qty) => {
                 if (!qty || isNaN(qty) || qty <= 0) return customAlert('Cantidad inválida.');
-                agregarAlCarrito(barcode, parseFloat(qty), prod);
+
+                const cantidadSolicitada = parseFloat(qty);
+
+                // Validación para no permitir sobrepasar el stock real
+                if (cantidadSolicitada > cantidadDisponible) {
+                    return customAlert(`Solo puedes agregar hasta ${cantidadDisponible} unidad(es) más al ticket.`, 'Stock Insuficiente');
+                }
+
+                agregarAlCarrito(dbKey, cantidadSolicitada, prod);
             });
         }
 
         // --- LÓGICA DE GESTIÓN DE PRODUCTOS ---
         function prepararFormularioProducto() {
             document.getElementById('prod-form-title').innerText = "Nuevo Producto";
-            ['nombre', 'barcode', 'costo', 'precio', 'stock', 'min'].forEach(id => document.getElementById(`prod-${id}`).value = '');
+            ['nombre', 'barcode', 'costo', 'precio', 'stock', 'min', 'db-key'].forEach(id => document.getElementById(`prod-${id}`).value = '');
             document.getElementById('prod-img-preview').src = "https://ui-avatars.com/api/?name=Producto&background=E2E8F0&color=94A3B8&size=100&rounded=true";
             avatarTemporalProd = null;
             document.getElementById('modal-producto').classList.add('active');
@@ -1425,8 +1461,12 @@
             const precio = parseFloat(document.getElementById('prod-precio').value) || 0;
             const stock = parseInt(document.getElementById('prod-stock').value) || 0;
             const min = parseInt(document.getElementById('prod-min').value) || 0;
+            const existingDbKey = document.getElementById('prod-db-key').value; // Recuperar la llave si es edición
 
-            if (!nombre || !barcode) return customAlert("El nombre y código de barras son obligatorios.");
+            if (!nombre) return customAlert("El nombre del producto es obligatorio.");
+
+            // Si es un producto nuevo generamos un ID, si no usamos el existente
+            const targetDbKey = existingDbKey ? existingDbKey : db.ref().child('productos').push().key;
 
             const producto = {
                 nombre: nombre,
@@ -1435,34 +1475,47 @@
                 precio: precio,
                 stockActual: stock,
                 stockMinimo: min,
-                imagen: avatarTemporalProd || (productosDB[barcode] ? productosDB[barcode].imagen : '')
+                imagen: avatarTemporalProd || (productosDB[targetDbKey] ? productosDB[targetDbKey].imagen : '')
             };
 
-            db.ref(`productos/${barcode}`).set(producto).then(() => {
+            db.ref(`productos/${targetDbKey}`).set(producto).then(() => {
                 customAlert('Producto guardado correctamente en inventario.', 'Éxito');
                 document.getElementById('modal-producto').classList.remove('active');
             });
         }
 
-        function editarProducto(barcode) {
-            const p = productosDB[barcode]; if (!p) return;
+        function editarProducto(dbKey) {
+            const p = productosDB[dbKey]; if (!p) return;
             document.getElementById('prod-form-title').innerText = "Editar Producto";
             document.getElementById('prod-nombre').value = p.nombre;
-            document.getElementById('prod-barcode').value = p.barcode;
+            document.getElementById('prod-barcode').value = p.barcode || '';
             document.getElementById('prod-costo').value = p.costo || 0;
             document.getElementById('prod-precio').value = p.precio || 0;
             document.getElementById('prod-stock').value = p.stockActual || 0;
             document.getElementById('prod-min').value = p.stockMinimo || 0;
+            document.getElementById('prod-db-key').value = dbKey; // Guardar la llave invisiblemente para actualizar el mismo producto
             document.getElementById('prod-img-preview').src = p.imagen || getAvatarUrl(p.nombre);
             avatarTemporalProd = null;
             document.getElementById('modal-producto').classList.add('active');
         }
 
         // --- CARRITO Y TICKET ---
-        function agregarAlCarrito(barcode, cantidad, producto) {
-            const item = carrito.find(i => i.barcode === barcode);
-            if (item) { item.cantidad += cantidad; item.total = item.cantidad * item.precio; }
-            else { carrito.push({ barcode: producto.barcode, nombre: producto.nombre, precio: producto.precio, cantidad: cantidad, total: producto.precio * cantidad }); }
+        function agregarAlCarrito(dbKey, cantidad, producto) {
+            // Ahora buscamos por dbKey para evitar colisiones si hay códigos de barra en blanco
+            const item = carrito.find(i => i.dbKey === dbKey);
+            if (item) {
+                item.cantidad += cantidad;
+                item.total = item.cantidad * item.precio;
+            } else {
+                carrito.push({
+                    dbKey: dbKey, // Guardar la llave interna
+                    barcode: producto.barcode,
+                    nombre: producto.nombre,
+                    precio: producto.precio,
+                    cantidad: cantidad,
+                    total: producto.precio * cantidad
+                });
+            }
             actualizarUI_Ticket();
         }
 
@@ -1510,7 +1563,13 @@
             };
 
             const updates = {}; updates[`ventas/${folio}`] = venta;
-            carrito.forEach(item => { updates[`productos/${item.barcode}/stockActual`] = productosDB[item.barcode].stockActual - item.cantidad; });
+
+            // Usar la dbKey para actualizar el stock correctamente en firebase
+            carrito.forEach(item => {
+                if (productosDB[item.dbKey]) {
+                    updates[`productos/${item.dbKey}/stockActual`] = productosDB[item.dbKey].stockActual - item.cantidad;
+                }
+            });
 
             db.ref().update(updates).then(() => {
                 customAlert(`Cobro exitoso. Cambio: $${document.getElementById('pos-cambio').innerText}`);
@@ -1525,14 +1584,14 @@
                 const contenedor = document.getElementById('lista-productos');
                 if (contenedor) {
                     contenedor.innerHTML = '';
-                    Object.values(productosDB).forEach(p => {
+                    Object.entries(productosDB).forEach(([dbKey, p]) => {
                         contenedor.innerHTML += `
                             <div class="card">
                                 <div style="display:flex; gap: 15px; align-items:center;">
                                     <img src="${p.imagen || getAvatarUrl(p.nombre)}" style="width:50px; height:50px; border-radius:10px; object-fit:cover;">
                                     <div><strong style="color:var(--text-main); font-size:1rem;">${p.nombre}</strong><br><span style="color:var(--text-muted); font-size:0.85rem;">Stock: ${p.stockActual} | $${p.precio}</span></div>
                                 </div>
-                                <i class="fa-solid fa-pen" style="color: var(--primary); padding:10px; cursor:pointer;" onclick="editarProducto('${p.barcode}')"></i>
+                                <i class="fa-solid fa-pen" style="color: var(--primary); padding:10px; cursor:pointer;" onclick="editarProducto('${dbKey}')"></i>
                             </div>`;
                     });
                 }
