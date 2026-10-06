@@ -34,6 +34,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
     <!-- Configuración -->
     <script src="config.js"></script>
 
@@ -432,6 +434,31 @@
             font-size: 1.15rem;
         }
 
+        /* BOTÓN ESCÁNER FLOTANTE */
+        .scanner-fab {
+            position: fixed;
+            bottom: calc(170px + env(safe-area-inset-bottom, 0px));
+            right: 5%;
+            background: var(--primary);
+            color: var(--text-main);
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 6px 15px rgba(30, 41, 59, 0.3);
+            z-index: 90;
+            cursor: pointer;
+            font-size: 1.5rem;
+            transition: transform 0.2s;
+        }
+
+        .scanner-fab:active {
+            transform: scale(0.92);
+            background-color: var(--primary-hover);
+        }
+
         /* LOGIN */
         #view-login {
             justify-content: center;
@@ -479,8 +506,9 @@
             position: fixed;
             top: 0;
             left: 0;
-            width: 100vw;
-            height: 100vh;
+            right: 0;
+            bottom: 0;
+            /* Mejor que height: 100vh para que no se salga de la pantalla en móviles */
             background: rgba(0, 0, 0, 0.5);
             z-index: 200;
             backdrop-filter: blur(3px);
@@ -497,15 +525,15 @@
         .modal-content {
             background: var(--bg-surface);
             width: 100%;
-            max-height: 85vh;
-            /* Ocupa hasta el 85% de la pantalla */
+            max-height: 85%;
+            /* Restringe el tamaño respecto a la pantalla real disponible */
             border-radius: 24px 24px 0 0;
             padding: 20px;
+            padding-bottom: calc(20px + env(safe-area-inset-bottom, 15px));
+            /* Libera la barra de inicio del iPhone */
             display: flex;
             flex-direction: column;
             animation: slideUp 0.3s ease;
-            overflow: hidden;
-            /* Mantiene la estructura del modal sin desbordes de fondo */
         }
 
         /* El contenedor interior del modal es el que hace scroll */
@@ -513,8 +541,7 @@
             flex: 1;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
-            padding-bottom: 20px;
-            /* Margen para asegurar que el teclado o gestos no tapen botones */
+            /* Se quitó el padding inferior extra aquí para no crear scroll muerto */
         }
 
         @keyframes slideUp {
@@ -787,6 +814,12 @@
                 onkeyup="filtrarProductosPOS()">
         </div>
         <div class="product-grid" id="pos-product-grid"></div>
+
+        <!-- NUEVO BOTÓN ESCÁNER FLOTANTE -->
+        <div class="scanner-fab" onclick="escanearCodigoBarras()">
+            <i class="fa-solid fa-barcode"></i>
+        </div>
+
         <div class="ticket-fab-bar" onclick="abrirModalTicket()">
             <span><i class="fa-solid fa-receipt"></i> Ver Ticket (<span id="ticket-count">0</span>)</span>
             <strong>$<span id="ticket-total-fab">0.00</span></strong>
@@ -1092,6 +1125,46 @@
         </div>
     </div>
 
+    <!-- NUEVO MODAL: AGREGAR PRODUCTO AL TICKET -->
+    <div class="modal-overlay" id="modal-add-ticket">
+        <div class="modal-content" style="max-height: 90%;">
+            <div class="modal-header">
+                <h3>Agregar al Ticket</h3>
+                <button class="close-btn"
+                    onclick="document.getElementById('modal-add-ticket').classList.remove('active')"><i
+                        class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body-scroll"
+                style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+                <img id="add-ticket-img" src=""
+                    style="width: 120px; height: 120px; border-radius: 16px; object-fit: cover; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                <h2 id="add-ticket-nombre" style="font-size: 1.4rem; color: var(--text-main); margin-bottom: 5px;">
+                    Nombre Producto</h2>
+                <h3 id="add-ticket-precio" style="color: var(--primary-hover); font-size: 1.2rem; margin-bottom: 5px;">
+                    $0.00</h3>
+                <p id="add-ticket-disponible" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">
+                    Disponible: 0 pz</p>
+
+                <div class="input-group" style="width: 100%; max-width: 200px; margin: 0 auto 20px auto;">
+                    <i class="fa-solid fa-hashtag" style="left: auto; right: 15px;"></i>
+                    <!-- inputmode="numeric" y pattern activan el teclado numérico de celular automáticamente -->
+                    <input type="number" id="add-ticket-qty" value="1" min="1" inputmode="numeric" pattern="[0-9]*"
+                        style="text-align: center; padding: 15px; font-size: 1.5rem; font-weight: bold; border-radius: 16px;">
+                </div>
+
+                <input type="hidden" id="add-ticket-dbkey">
+
+                <div style="display: flex; gap: 10px; width: 100%;">
+                    <button class="secondary"
+                        onclick="document.getElementById('modal-add-ticket').classList.remove('active')"
+                        style="flex: 1;">Cancelar</button>
+                    <button onclick="confirmarAgregarTicket()" style="flex: 2;"><i class="fa-solid fa-cart-plus"></i>
+                        Agregar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- NAVBAR INFERIOR -->
     <div id="main-nav" class="bottom-nav">
         <div class="nav-item selected" data-target="pos" data-title="Venta">
@@ -1105,6 +1178,24 @@
         </div>
         <div class="nav-item" id="nav-settings" data-target="settings" data-title="Ajustes">
             <div class="nav-icon-wrapper"><i class="fa-solid fa-gear"></i></div><span>Ajustes</span>
+        </div>
+    </div>
+
+    <!-- MODAL ESCÁNER DE CÁMARA -->
+    <div class="modal-overlay" id="modal-scanner">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Escanear Producto</h3>
+                <button class="close-btn" onclick="cerrarScanner()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body-scroll" style="display: flex; flex-direction: column; align-items: center;">
+                <!-- Aquí se renderiza la cámara -->
+                <div id="reader"
+                    style="width: 100%; max-width: 400px; border-radius: 16px; overflow: hidden; margin-bottom: 20px;">
+                </div>
+
+                <button class="secondary" onclick="cerrarScanner()"><i class="fa-solid fa-ban"></i> Cancelar</button>
+            </div>
         </div>
     </div>
 
@@ -1406,11 +1497,11 @@
             });
         }
 
+        // REEMPLAZO Y NUEVA FUNCIÓN PARA AÑADIR A TICKET
         function seleccionarProductoPOS(dbKey) {
             const prod = productosDB[dbKey];
             if (!prod) return customAlert('No se pudo encontrar este producto en la base de datos.');
 
-            // Verificar si ya hay de este producto en el ticket para restarlo de lo disponible
             const itemEnCarrito = carrito.find(i => i.dbKey === dbKey);
             const cantidadActualEnCarrito = itemEnCarrito ? itemEnCarrito.cantidad : 0;
             const cantidadDisponible = prod.stockActual - cantidadActualEnCarrito;
@@ -1419,18 +1510,107 @@
                 return customAlert(`Ya has agregado todo el stock disponible (${prod.stockActual}) al ticket.`, 'Stock Agotado');
             }
 
-            customPrompt(`¿Cantidad a agregar? (Disponible: ${cantidadDisponible})`, "1", "Añadir " + prod.nombre, (qty) => {
-                if (!qty || isNaN(qty) || qty <= 0) return customAlert('Cantidad inválida.');
+            // Llenar el nuevo modal con los datos del producto
+            const imgSrc = prod.imagen ? prod.imagen : getAvatarUrl(prod.nombre);
+            document.getElementById('add-ticket-img').src = imgSrc;
+            document.getElementById('add-ticket-nombre').innerText = prod.nombre;
+            document.getElementById('add-ticket-precio').innerText = `$${prod.precio.toFixed(2)}`;
+            document.getElementById('add-ticket-disponible').innerText = `Disponible: ${cantidadDisponible} pz`;
 
-                const cantidadSolicitada = parseFloat(qty);
+            document.getElementById('add-ticket-dbkey').value = dbKey;
 
-                // Validación para no permitir sobrepasar el stock real
-                if (cantidadSolicitada > cantidadDisponible) {
-                    return customAlert(`Solo puedes agregar hasta ${cantidadDisponible} unidad(es) más al ticket.`, 'Stock Insuficiente');
+            const inputQty = document.getElementById('add-ticket-qty');
+            inputQty.value = 1; // Reseteamos a 1
+
+            // Abrir el modal y desplegar teclado automáticamente
+            document.getElementById('modal-add-ticket').classList.add('active');
+            setTimeout(() => {
+                inputQty.focus();
+                inputQty.select();
+            }, 200); // 200ms para asegurar que el modal ya animó su subida
+        }
+
+        // --- ESCÁNER DE CÓDIGO DE BARRAS CON CÁMARA ---
+        let html5QrCode = null;
+
+        function escanearCodigoBarras() {
+            document.getElementById('modal-scanner').classList.add('active');
+
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("reader");
+            }
+
+            // Configuración: 10 cuadros por segundo y un área de lectura rectangular clásica de código de barras
+            const config = { fps: 10, qrbox: { width: 250, height: 100 } };
+
+            // Iniciar usando la cámara trasera (environment)
+            html5QrCode.start(
+                { facingMode: "environment" },
+                config,
+                (codigoLeido, decodedResult) => {
+                    // Éxito: apagar cámara, cerrar modal y buscar
+                    cerrarScanner();
+                    procesarCodigoLeido(codigoLeido);
+                },
+                (errorMessage) => {
+                    // Ignorar errores continuos de cuando la cámara está buscando y aún no lee nada
                 }
-
-                agregarAlCarrito(dbKey, cantidadSolicitada, prod);
+            ).catch((err) => {
+                cerrarScanner();
+                customAlert('Ocurrió un error al intentar acceder a la cámara. Revisa los permisos de tu navegador.', 'Error de Cámara');
             });
+        }
+
+        function cerrarScanner() {
+            document.getElementById('modal-scanner').classList.remove('active');
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop().catch(err => console.error("Error al detener el escáner", err));
+            }
+        }
+
+        function procesarCodigoLeido(codigo) {
+            if (!codigo || codigo.trim() === '') return;
+            codigo = codigo.trim();
+
+            let dbKeyEncontrada = null;
+
+            // Buscar en la base de datos local
+            for (const [dbKey, p] of Object.entries(productosDB)) {
+                if (p.barcode === codigo) {
+                    dbKeyEncontrada = dbKey;
+                    break;
+                }
+            }
+
+            // Validar existencia y proceder
+            if (!dbKeyEncontrada) {
+                return customAlert(`El código escaneado (${codigo}) no se encuentra registrado en el inventario.`, 'Producto no encontrado');
+            }
+
+            // Abrir el modal del producto correspondiente validando stock
+            seleccionarProductoPOS(dbKeyEncontrada);
+        }
+
+        function confirmarAgregarTicket() {
+            const dbKey = document.getElementById('add-ticket-dbkey').value;
+            const prod = productosDB[dbKey];
+            const qtyInput = document.getElementById('add-ticket-qty').value;
+            const cantidadSolicitada = parseFloat(qtyInput);
+
+            if (!cantidadSolicitada || isNaN(cantidadSolicitada) || cantidadSolicitada <= 0) {
+                return customAlert('Cantidad inválida.');
+            }
+
+            const itemEnCarrito = carrito.find(i => i.dbKey === dbKey);
+            const cantidadActualEnCarrito = itemEnCarrito ? itemEnCarrito.cantidad : 0;
+            const cantidadDisponible = prod.stockActual - cantidadActualEnCarrito;
+
+            if (cantidadSolicitada > cantidadDisponible) {
+                return customAlert(`Solo puedes agregar hasta ${cantidadDisponible} unidad(es) más al ticket.`, 'Stock Insuficiente');
+            }
+
+            agregarAlCarrito(dbKey, cantidadSolicitada, prod);
+            document.getElementById('modal-add-ticket').classList.remove('active');
         }
 
         // --- LÓGICA DE GESTIÓN DE PRODUCTOS ---
@@ -1585,14 +1765,18 @@
                 if (contenedor) {
                     contenedor.innerHTML = '';
                     Object.entries(productosDB).forEach(([dbKey, p]) => {
+
+                        // Color dinámico para la lista de inventario
+                        const colorStock = p.stockActual <= (p.stockMinimo || 0) ? 'var(--danger)' : 'var(--text-muted)';
+
                         contenedor.innerHTML += `
-                            <div class="card">
-                                <div style="display:flex; gap: 15px; align-items:center;">
-                                    <img src="${p.imagen || getAvatarUrl(p.nombre)}" style="width:50px; height:50px; border-radius:10px; object-fit:cover;">
-                                    <div><strong style="color:var(--text-main); font-size:1rem;">${p.nombre}</strong><br><span style="color:var(--text-muted); font-size:0.85rem;">Stock: ${p.stockActual} | $${p.precio}</span></div>
-                                </div>
-                                <i class="fa-solid fa-pen" style="color: var(--primary); padding:10px; cursor:pointer;" onclick="editarProducto('${dbKey}')"></i>
-                            </div>`;
+                    <div class="card">
+                        <div style="display:flex; gap: 15px; align-items:center;">
+                            <img src="${p.imagen || getAvatarUrl(p.nombre)}" style="width:50px; height:50px; border-radius:10px; object-fit:cover;">
+                            <div><strong style="color:var(--text-main); font-size:1rem;">${p.nombre}</strong><br><span style="color:var(--text-muted); font-size:0.85rem;">Stock: <span style="color:${colorStock}; font-weight: 600;">${p.stockActual}</span> | $${p.precio}</span></div>
+                        </div>
+                        <i class="fa-solid fa-pen" style="color: var(--primary); padding:10px; cursor:pointer;" onclick="editarProducto('${dbKey}')"></i>
+                    </div>`;
                     });
                 }
             });
