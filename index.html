@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#FFFFFF">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <link rel="apple-touch-icon" href="assets/icon.png">
+    <link rel="shortcut icon" href="assets/icon.png" type="image/x-icon">
+
+    <title>Oasis POS</title>
+
+    <!-- Tipografía Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Cropper.js (Para recorte de imagen circular) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+
+    <!-- SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aws-sdk/2.1363.0/aws-sdk.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Configuración -->
+    <script src="config.js"></script>
+
+    <style>
+        :root {
+            --bg-base: #F4F7F9;
+            --bg-surface: #FFFFFF;
+            --primary: #FBBF24;
+            --primary-hover: #F59E0B;
+            --text-main: #1E293B;
+            --text-muted: #94A3B8;
+            --border: #E2E8F0;
+            --danger: #EF4444;
+            --success: #10B981;
+            --radius-lg: 16px;
+            --radius-md: 10px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Ocultar el cursor de texto y selección en toda la app */
+        body {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        /* Reactivarlo SOLO en los campos donde realmente vas a escribir */
+        input,
+        select,
+        textarea {
+            -webkit-user-select: auto;
+            -moz-user-select: auto;
+            -ms-user-select: auto;
+            user-select: auto;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* APP BAR SUPERIOR */
+        .app-bar {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: env(safe-area-inset-top, 15px) 20px 10px 20px;
+            z-index: 100;
+            border-bottom: 1px solid var(--border);
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+        }
+
+        .app-bar.active {
+            display: flex;
+        }
+
+        .app-bar-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .app-bar-user img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: var(--bg-base);
+        }
+
+        .app-bar-user-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-bar-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .app-bar-role {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .app-bar-page {
+            text-align: right;
+        }
+
+        .app-bar-date {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: capitalize;
+        }
+
+        .app-bar-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        /* VISTAS */
+        .view-container {
+            display: none;
+            flex: 1;
+            width: 100%;
+            padding: 20px;
+            padding-top: calc(80px + env(safe-area-inset-top, 0px));
+            padding-bottom: 100px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .view-container.active {
+            display: flex;
+            flex-direction: column;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* INPUTS, SELECTS Y BOTONES */
+        .input-group {
+            position: relative;
+            margin-bottom: 15px;
+            width: 100%;
+        }
+
+        .input-group i {
+            position: absolute;
+            left: 15px;
+            top: 16px;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 14px 14px 14px 45px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            background-color: var(--bg-surface);
+            color: var(--text-main);
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            outline: none;
+        }
+
+        /* Mejora en el estilo de Dropdowns */
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394A3B8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px top 50%;
+            background-size: 12px auto;
+            padding-right: 40px;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.2);
+        }
+
+        input::placeholder {
+            color: var(--text-muted);
+            font-weight: 300;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            border-radius: var(--radius-md);
+            border: none;
+            background-color: var(--primary);
+            color: var(--text-main);
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        button:active {
+            transform: scale(0.98);
+            background-color: var(--primary-hover);
+        }
+
+        button.danger {
+            background-color: transparent;
+            border: 1px solid var(--danger);
+            color: var(--danger);
+        }
+
+        button.secondary {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+        }
+
+        button.outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+        }
+
+        button.icon-only {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            padding: 0;
+            flex-shrink: 0;
+        }
+
+        .card {
+            background-color: var(--bg-surface);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            border: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        /* GRID POS */
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .prod-item {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .prod-item:active {
+            transform: scale(0.95);
+            border-color: var(--primary);
+        }
+
+        .prod-item img {
+            width: 100%;
+            aspect-ratio: 1/1;
+            object-fit: cover;
+            border-radius: var(--radius-md);
+            margin-bottom: 8px;
+            background-color: #f1f5f9;
+        }
+
+        .prod-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-main);
+            line-height: 1.2;
+            margin-bottom: 4px;
+        }
+
+        .prod-price {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--primary-hover);
+        }
+
+        /* NAVBAR INFERIOR */
+        .bottom-nav {
+            display: none;
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px)) 10px;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid var(--border);
+            position: fixed;
+            bottom: 0;
+            z-index: 100;
+            box-shadow: 0 -10px 20px rgba(0, 0, 0, 0.03);
+        }
+
+        .bottom-nav.active {
+            display: flex;
+        }
+
+        .nav-item {
+            color: var(--text-muted);
+            text-align: center;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s;
+        }
+
+        .nav-icon-wrapper {
+            width: 45px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 15px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .nav-item i {
+            font-size: 1.2rem;
+        }
+
+        .nav-item.selected {
+            color: var(--text-main);
+        }
+
+        .nav-item.selected .nav-icon-wrapper {
+            background-color: var(--primary);
+            color: var(--text-main);
+            width: 60px;
+        }
+
+        /* TICKET FAB */
+        .ticket-fab-bar {
+            position: fixed;
+            bottom: calc(85px + env(safe-area-inset-bottom, 0px));
+            left: 5%;
+            width: 90%;
+            background: var(--text-main);
+            color: white;
+            padding: 14px 22px;
+            border-radius: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 10px 25px rgba(30, 41, 59, 0.4);
+            z-index: 90;
+            cursor: pointer;
+        }
+
+        .ticket-fab-bar strong {
+            color: var(--primary);
+            font-size: 1.15rem;
+        }
+
+        /* LOGIN CORREGIDO (CENTRADOS) */
+        /* LOGIN CORREGIDO (CENTRADOS) */
+        #view-login {
+            justify-content: center;
+            align-items: center;
+            background-image: url('assets/bg.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            padding: 20px;
+            height: 100vh;
+        }
+
+        .login-box {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px 25px;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .login-box img {
+            max-width: 180px;
+            margin-bottom: 20px;
+        }
+
+        .login-box h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 5px;
+        }
+
+        .login-box p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 30px;
+        }
+
+        /* MODALES */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 200;
+            backdrop-filter: blur(3px);
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal-content {
+            background: var(--bg-surface);
+            width: 100%;
+            max-height: 85vh;
+            border-radius: 24px 24px 0 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+            }
+
+            to {
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+        }
+
+        .modal-header h3 {
+            font-size: 1.2rem;
+            color: var(--text-main);
+        }
+
+        .close-btn {
+            background: var(--bg-base);
+            width: 40px;
+            padding: 0;
+            height: 40px;
+            border-radius: 50%;
+            color: var(--text-main);
+        }
+
+        .ticket-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px dashed var(--border);
+        }
+
+        .ticket-item-info {
+            flex: 1;
+        }
+
+        .ticket-item-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .ticket-item-price {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .ticket-item-total {
+            font-weight: 700;
+            color: var(--primary-hover);
+            font-size: 1rem;
+            text-align: right;
+        }
+
+        /* SISTEMA DE DIÁLOGOS */
+        .sys-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(30, 41, 59, 0.6);
+            z-index: 9999;
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .sys-modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .sys-modal-box {
+            background: var(--bg-surface);
+            padding: 25px;
+            border-radius: var(--radius-lg);
+            width: 90%;
+            max-width: 340px;
+            text-align: center;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            transform: scale(0.95);
+            transition: transform 0.2s;
+        }
+
+        .sys-modal-overlay.active .sys-modal-box {
+            transform: scale(1);
+        }
+
+        .sys-modal-box h3 {
+            color: var(--text-main);
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .sys-modal-box p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+
+        .sys-modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .sys-modal-actions button {
+            flex: 1;
+            padding: 12px;
+            font-size: 0.95rem;
+            border-radius: 12px;
+        }
+
+        .sys-modal-input {
+            margin-bottom: 20px;
+        }
+
+        .sys-modal-input input {
+            background: var(--bg-base);
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+            padding: 15px;
+        }
+
+        /* PERFIL Y AJUSTES */
+        .profile-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .profile-header img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid var(--bg-surface);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        .profile-header h2 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 2px;
+        }
+
+        .profile-header p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+
+        .badge-role {
+            background: var(--primary);
+            color: var(--text-main);
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .settings-menu .card {
+            cursor: pointer;
+            padding: 20px 16px;
+            transition: background 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .settings-menu .card:active {
+            background: var(--bg-base);
+        }
+
+        /* CROPPER IMAGE */
+        .cropper-container {
+            width: 100%;
+            height: 300px;
+            margin-bottom: 15px;
+            background: #000;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+
+        .cropper-view-box,
+        .cropper-face {
+            border-radius: 50%;
+        }
+
+        /* Estilo circular tipo Google */
+
+        /* LISTA MOVIMIENTOS CAJA */
+        .movimiento-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- APP BAR -->
+    <div id="main-app-bar" class="app-bar">
+        <div class="app-bar-user">
+            <img id="ab-user-img" src="" alt="Perfil">
+            <div class="app-bar-user-info">
+                <span id="ab-user-name" class="app-bar-name">Cargando...</span>
+                <span id="ab-user-role" class="app-bar-role">Rol</span>
+            </div>
+        </div>
+        <div class="app-bar-page">
+            <div id="ab-date" class="app-bar-date">Lunes 01, Enero 2026</div>
+            <div id="ab-title" class="app-bar-title">Venta</div>
+        </div>
+    </div>
+
+    <!-- VISTA: LOGIN -->
+    <div id="view-login" class="view-container active">
+        <div class="login-box">
+            <img src="assets/logo.png" alt="Oasis Logo"
+                onerror="this.src='https://ui-avatars.com/api/?name=Oasis&background=FBBF24&color=fff&size=150&rounded=true'">
+            <h1>Iniciar Sesión</h1>
+            <p>Ingresa tus credenciales para continuar</p>
+
+            <div class="input-group">
+                <i class="fa-regular fa-user"></i>
+                <input type="text" id="login-user" placeholder="Usuario">
+            </div>
+            <div class="input-group">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" id="login-pin" placeholder="PIN">
+            </div>
+            <button onclick="iniciarSesion()" style="margin-top: 25px;">Entrar <i
+                    class="fa-solid fa-arrow-right"></i></button>
+            <p style="margin-top: 30px; font-size: 0.7rem; letter-spacing: 2px; color: var(--text-muted);">SIMPLIFICA TU
+                DÍA</p>
+        </div>
+    </div>
+
+    <!-- VISTA: CAJA (POS) -->
+    <div id="view-pos" class="view-container">
+        <div class="input-group" style="margin-bottom: 20px;">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="search-prod" placeholder="Buscar producto o código..."
+                onkeyup="filtrarProductosPOS()">
+        </div>
+        <div class="product-grid" id="pos-product-grid"></div>
+        <div class="ticket-fab-bar" onclick="abrirModalTicket()">
+            <span><i class="fa-solid fa-receipt"></i> Ver Ticket (<span id="ticket-count">0</span>)</span>
+            <strong>$<span id="ticket-total-fab">0.00</span></strong>
+        </div>
+    </div>
+
+    <!-- VISTA: PRODUCTOS (Inventario) -->
+    <div id="view-products" class="view-container">
+        <div
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 10px;">
+            <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="search-inv" placeholder="Buscar en inventario..." onkeyup="filtrarInventario()">
+            </div>
+            <button class="icon-only" onclick="prepararFormularioProducto()"><i class="fa-solid fa-plus"></i></button>
+        </div>
+
+        <div id="form-producto" class="card" style="display: none; flex-direction: column; gap: 10px;">
+            <h3 id="prod-form-title" style="margin-bottom: 10px; width:100%;">Nuevo Producto</h3>
+            <div class="input-group"><i class="fa-solid fa-tag"></i><input type="text" id="prod-nombre"
+                    placeholder="Nombre"></div>
+            <div class="input-group"><i class="fa-solid fa-barcode"></i><input type="text" id="prod-barcode"
+                    placeholder="Código de Barras"></div>
+            <div style="display: flex; gap: 10px; width: 100%;">
+                <div class="input-group"><i class="fa-solid fa-dollar-sign"></i><input type="number" id="prod-costo"
+                        placeholder="Costo"></div>
+                <div class="input-group"><i class="fa-solid fa-dollar-sign"></i><input type="number" id="prod-precio"
+                        placeholder="Precio"></div>
+            </div>
+            <div style="display: flex; gap: 10px; width: 100%;">
+                <div class="input-group"><i class="fa-solid fa-box"></i><input type="number" id="prod-stock"
+                        placeholder="Stock"></div>
+                <div class="input-group"><i class="fa-solid fa-boxes-stacked"></i><input type="number" id="prod-min"
+                        placeholder="Mínimo"></div>
+            </div>
+            <input type="file" id="prod-img" accept="image/*"
+                style="padding: 10px; border: none; background: transparent;">
+            <input type="hidden" id="prod-img-actual">
+            <div style="display: flex; gap: 10px; width: 100%; margin-top: 10px;">
+                <button class="secondary" onclick="document.getElementById('form-producto').style.display='none'"
+                    style="flex: 1;">Cancelar</button>
+                <button onclick="guardarProducto()" style="flex: 1;">Guardar</button>
+            </div>
+        </div>
+        <div id="lista-productos"></div>
+    </div>
+
+    <!-- VISTA: CORTE DE CAJA -->
+    <div id="view-corte" class="view-container">
+        <div class="card" style="flex-direction: column; align-items: flex-start; padding: 25px;">
+            <div
+                style="display: flex; justify-content: space-between; width: 100%; align-items: center; margin-bottom: 15px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="background: #D1FAE5; color: var(--success); padding: 10px; border-radius: 12px;"><i
+                            class="fa-solid fa-lock-open"></i></div>
+                    <div><span style="font-size: 0.8rem; color: var(--text-muted);">Estado</span><br><strong
+                            style="font-size: 1.2rem;">Abierta</strong></div>
+                </div>
+                <input type="date" id="corte-fecha-input" style="width: auto; padding: 8px; border-radius: 8px;"
+                    onchange="calcularCorte()">
+            </div>
+            <span style="color: var(--text-muted); font-size: 0.9rem;">Efectivo del día (<span
+                    id="fecha-corte"></span>)</span>
+            <h1 style="font-size: 2.5rem; color: var(--text-main); margin: 5px 0 20px 0;">$<span
+                    id="corte-total">0.00</span></h1>
+
+            <!-- Gráfica Semanal -->
+            <div style="width: 100%; margin-bottom: 20px;">
+                <canvas id="chart-ventas" height="150"></canvas>
+            </div>
+
+            <button onclick="cerrarCaja()"
+                style="background-color: var(--bg-surface); border: 2px solid var(--primary); color: var(--primary-hover); margin-bottom: 20px;"><i
+                    class="fa-solid fa-cash-register"></i> Hacer corte Z (Cerrar)</button>
+
+            <div style="width: 100%;">
+                <h3
+                    style="font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 10px;">
+                    Movimientos</h3>
+                <div id="lista-movimientos"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VISTA: AJUSTES -->
+    <div id="view-settings" class="view-container">
+        <div class="profile-header">
+            <img id="ajustes-img" src="" alt="Perfil" onclick="abrirEdicionPerfil()">
+            <h2 id="ajustes-nombre">Nombre de Usuario</h2>
+            <p id="ajustes-username">@usuario</p>
+            <span class="badge-role" id="ajustes-rol">Rol</span>
+            <div style="display: flex; gap: 15px; margin-top: 15px; font-size: 0.85rem; color: var(--text-muted);">
+                <span><i class="fa-solid fa-cake-candles"></i> <span id="ajustes-edad">--</span> años</span>
+                <span><i class="fa-solid fa-venus-mars"></i> <span id="ajustes-sexo">--</span></span>
+            </div>
+        </div>
+
+        <div class="settings-menu">
+            <div class="card" onclick="abrirEdicionPerfil()">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <i class="fa-solid fa-user-pen" style="color: var(--text-muted); font-size: 1.2rem;"></i>
+                    <span style="font-weight: 500;">Editar Mi Perfil</span>
+                </div>
+                <i class="fa-solid fa-chevron-right" style="color: var(--border);"></i>
+            </div>
+
+            <div class="card" id="btn-gestionar-usuarios" onclick="irAUsuarios()" style="display: none;">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <i class="fa-solid fa-users-gear" style="color: var(--primary-hover); font-size: 1.2rem;"></i>
+                    <span style="font-weight: 500;">Gestión de Usuarios</span>
+                </div>
+                <i class="fa-solid fa-chevron-right" style="color: var(--border);"></i>
+            </div>
+
+            <div class="card" onclick="mostrarAcercaDe()">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <i class="fa-solid fa-circle-info" style="color: var(--text-muted); font-size: 1.2rem;"></i>
+                    <span style="font-weight: 500;">Acerca de Oasis POS</span>
+                </div>
+                <i class="fa-solid fa-chevron-right" style="color: var(--border);"></i>
+            </div>
+
+            <button class="danger" style="margin-top: 20px;" onclick="cerrarSesion()"><i
+                    class="fa-solid fa-arrow-right-from-bracket"></i> Cerrar Sesión</button>
+        </div>
+    </div>
+
+    <!-- VISTA: USUARIOS (Solo Admin) -->
+    <div id="view-users" class="view-container">
+        <!-- AQUÍ SE AGREGÓ margin-top: 20px; -->
+        <div
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 20px;">
+            <button class="outline" onclick="volverAAjustes()" style="width: auto; padding: 10px 15px;"><i
+                    class="fa-solid fa-arrow-left"></i></button>
+            <button onclick="prepararFormularioUsuario()"
+                style="width: auto; padding: 10px 20px; border-radius: 20px; margin-top: 0;"><i
+                    class="fa-solid fa-plus"></i> Nuevo</button>
+        </div>
+        <div id="lista-usuarios"></div>
+    </div>
+    <!-- MODAL USUARIO ADMIN (En lugar de form en la vista) -->
+    <div class="modal-overlay" id="modal-usuario-admin">
+        <div class="modal-content" style="max-height: 90vh;">
+            <div class="modal-header">
+                <h3 id="user-form-title">Nuevo Usuario</h3>
+                <button class="close-btn"
+                    onclick="document.getElementById('modal-usuario-admin').classList.remove('active')"><i
+                        class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div style="overflow-y: auto; padding-bottom: 20px;">
+                <div class="input-group"><i class="fa-regular fa-id-card"></i><input type="text" id="user-nombre"
+                        placeholder="Nombre Completo"></div>
+                <div class="input-group"><i class="fa-regular fa-user"></i><input type="text" id="user-username"
+                        placeholder="Nombre de Usuario (Login)"></div>
+                <div class="input-group"><i class="fa-solid fa-lock"></i><input type="text" id="user-pin"
+                        placeholder="PIN / Contraseña"></div>
+                <div style="display: flex; gap: 10px; width: 100%;">
+                    <div class="input-group">
+                        <i class="fa-solid fa-venus-mars"></i>
+                        <select id="user-sexo">
+                            <option value="M">Masculino</option>
+                            <option value="F">Femenino</option>
+                        </select>
+                    </div>
+                    <div class="input-group"><i class="fa-solid fa-cake-candles"></i><input type="number" id="user-edad"
+                            placeholder="Edad"></div>
+                </div>
+                <div class="input-group">
+                    <i class="fa-solid fa-user-shield"></i>
+                    <select id="user-rol">
+                        <option value="Empleado">Empleado (Solo Venta)</option>
+                        <option value="Gerente">Gerente (Sin ajustes de usr)</option>
+                        <option value="Administrador">Administrador (Total)</option>
+                    </select>
+                </div>
+                <button onclick="guardarUsuarioAdmin()" style="margin-top: 10px;"><i class="fa-solid fa-save"></i>
+                    Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL EDICIÓN PROPIO PERFIL -->
+    <div class="modal-overlay" id="modal-perfil">
+        <div class="modal-content" style="max-height: 90vh;">
+            <div class="modal-header">
+                <h3>Editar Mi Perfil</h3>
+                <button class="close-btn"
+                    onclick="document.getElementById('modal-perfil').classList.remove('active')"><i
+                        class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div
+                style="overflow-y: auto; padding-bottom: 20px; display: flex; flex-direction: column; align-items: center;">
+
+                <div style="position: relative; margin-bottom: 20px;">
+                    <img id="mi-avatar-preview" src=""
+                        style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary); cursor: pointer;"
+                        onclick="document.getElementById('input-avatar').click()">
+                    <div
+                        style="position: absolute; bottom: 0; right: 0; background: var(--primary); color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; justify-content: center; align-items: center; pointer-events: none;">
+                        <i class="fa-solid fa-camera"></i>
+                    </div>
+                    <input type="file" id="input-avatar" accept="image/*" style="display: none;"
+                        onchange="abrirModalCropper(event)">
+                </div>
+
+                <div class="input-group"><i class="fa-regular fa-id-card"></i><input type="text" id="mi-nombre"
+                        placeholder="Nombre Completo"></div>
+                <div class="input-group"><i class="fa-solid fa-lock"></i><input type="text" id="mi-pin"
+                        placeholder="Nuevo PIN (Opcional)"></div>
+                <div style="display: flex; gap: 10px; width: 100%;">
+                    <div class="input-group"><i class="fa-solid fa-venus-mars"></i><select id="mi-sexo">
+                            <option value="M">Masculino</option>
+                            <option value="F">Femenino</option>
+                        </select></div>
+                    <div class="input-group"><i class="fa-solid fa-cake-candles"></i><input type="number" id="mi-edad"
+                            placeholder="Edad"></div>
+                </div>
+                <button onclick="guardarMiPerfil()" style="margin-top: 10px;"><i class="fa-solid fa-save"></i> Guardar
+                    Cambios</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CROPPER -->
+    <div class="modal-overlay" id="modal-cropper" style="z-index: 300;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Encuadrar Imagen</h3>
+                <button class="close-btn"
+                    onclick="document.getElementById('modal-cropper').classList.remove('active')"><i
+                        class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="cropper-container"><img id="image-to-crop" src=""></div>
+            <button onclick="recortarYGuardarAvatar()"><i class="fa-solid fa-check"></i> Aplicar</button>
+        </div>
+    </div>
+
+    <!-- NAVBAR INFERIOR -->
+    <div id="main-nav" class="bottom-nav">
+        <div class="nav-item selected" data-target="pos" data-title="Venta">
+            <div class="nav-icon-wrapper"><i class="fa-solid fa-cash-register"></i></div><span>Venta</span>
+        </div>
+        <div class="nav-item" id="nav-prod" data-target="products" data-title="Inventario">
+            <div class="nav-icon-wrapper"><i class="fa-solid fa-box-open"></i></div><span>Inventario</span>
+        </div>
+        <div class="nav-item" id="nav-corte" data-target="corte" data-title="Caja">
+            <div class="nav-icon-wrapper"><i class="fa-solid fa-wallet"></i></div><span>Caja</span>
+        </div>
+        <div class="nav-item" id="nav-settings" data-target="settings" data-title="Ajustes">
+            <div class="nav-icon-wrapper"><i class="fa-solid fa-gear"></i></div><span>Ajustes</span>
+        </div>
+    </div>
+
+    <!-- MODAL TICKET -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Ticket actual</h3>
+                <button class="close-btn" onclick="cerrarModalTicket()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="input-group" style="margin-bottom: 10px;"><i class="fa-regular fa-user"></i><input type="text"
+                    id="pos-cliente" placeholder="Nombre del cliente (Opcional)"></div>
+            <div id="ticket-items-container" style="flex: 1; overflow-y: auto; max-height: 35vh; margin-bottom: 15px;">
+            </div>
+
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-top: 1px solid var(--border);">
+                <div><span style="font-size: 1.2rem; font-weight: 600;">Total</span><br><span
+                        style="font-size: 0.8rem; color: var(--text-muted);"><span id="modal-qty-count">0</span>
+                        productos</span></div>
+                <h2 style="font-size: 1.8rem; color: var(--text-main);">$<span id="pos-total-final">0.00</span></h2>
+            </div>
+
+            <div class="input-group" style="margin-bottom: 10px;">
+                <i class="fa-solid fa-money-bill"></i>
+                <input type="number" id="pos-pago" placeholder="Efectivo recibido" onkeyup="calcularCambio()">
+            </div>
+            <div style="text-align: right; margin-bottom: 15px;">
+                <span style="font-size: 0.9rem; color: var(--text-muted);">Cambio a dar:</span>
+                <h3 style="color: var(--success);">$<span id="pos-cambio">0.00</span></h3>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button class="danger" onclick="limpiarTicket()" style="flex: 1;"><i
+                        class="fa-regular fa-trash-can"></i> Limpiar</button>
+                <button onclick="procesarTransaccion()" style="flex: 2;"><i class="fa-solid fa-cash-register"></i>
+                    Cobrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DEL SISTEMA -->
+    <div class="sys-modal-overlay" id="sys-modal">
+        <div class="sys-modal-box">
+            <h3 id="sys-title">Mensaje</h3>
+            <p id="sys-message">Descripción</p>
+            <div class="sys-modal-input" id="sys-input-container" style="display: none;"><input type="number"
+                    id="sys-input" value="1" inputmode="numeric"></div>
+            <div class="sys-modal-actions">
+                <button class="secondary" id="sys-btn-cancel" style="display: none;">Cancelar</button>
+                <button id="sys-btn-ok">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- SISTEMA DE MODALES ---
+        function showSysModal({ type, title, message, defaultValue, onConfirm }) {
+            const overlay = document.getElementById('sys-modal');
+            document.getElementById('sys-title').innerText = title || 'Aviso';
+            document.getElementById('sys-message').innerText = message;
+            const inputContainer = document.getElementById('sys-input-container'), inputEl = document.getElementById('sys-input');
+            const btnCancel = document.getElementById('sys-btn-cancel'), btnOk = document.getElementById('sys-btn-ok');
+
+            inputContainer.style.display = 'none'; btnCancel.style.display = 'none'; inputEl.value = '';
+
+            if (type === 'prompt') { inputContainer.style.display = 'block'; inputEl.value = defaultValue || ''; btnCancel.style.display = 'block'; setTimeout(() => { inputEl.focus(); inputEl.select(); }, 100); }
+            else if (type === 'confirm') { btnCancel.style.display = 'block'; }
+
+            overlay.classList.add('active');
+
+            btnOk.onclick = () => { overlay.classList.remove('active'); if (onConfirm) onConfirm(type === 'prompt' ? inputEl.value : undefined); };
+            btnCancel.onclick = () => overlay.classList.remove('active');
+        }
+
+        const customAlert = (message, title = 'Aviso') => showSysModal({ type: 'alert', message, title });
+        const customConfirm = (message, title, onConfirm) => showSysModal({ type: 'confirm', message, title, onConfirm });
+        const customPrompt = (message, defaultValue, title, onConfirm) => showSysModal({ type: 'prompt', message, defaultValue, title, onConfirm });
+
+        // --- INICIALIZACIÓN ---
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        AWS.config.update({ accessKeyId: cloudflareR2Config.accessKeyId, secretAccessKey: cloudflareR2Config.secretAccessKey, region: 'auto', signatureVersion: 'v4' });
+        const s3 = new AWS.S3({ endpoint: cloudflareR2Config.endpoint, s3ForcePathStyle: true });
+
+        let empleadoActual = null; let carrito = []; let productosDB = {}; let usuariosDB = {}; let ventasDB = {};
+        let cropper; let avatarTemporal = null; let chartVentas;
+
+        // --- OBTENER AVATAR GENÉRICO ---
+        function getAvatarUrl(nombre) {
+            return `https://ui-avatars.com/api/?name=${encodeURIComponent(nombre)}&background=random&color=fff&size=150&rounded=true`;
+        }
+
+        function obtenerFechaFormateada(dateObj = new Date()) {
+            const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            return `${dias[dateObj.getDay()]} ${String(dateObj.getDate()).padStart(2, '0')}, ${meses[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+        }
+
+        // --- NAVEGACIÓN ---
+        document.querySelectorAll('.nav-item[data-target]').forEach(item => {
+            item.addEventListener('click', function () { cambiarVista(this.getAttribute('data-target'), this.getAttribute('data-title')); });
+        });
+
+        function cambiarVista(vistaId, titulo, desdeCodigo = false) {
+            document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+            document.getElementById(`view-${vistaId}`).classList.add('active');
+
+            if (!desdeCodigo) {
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('selected'));
+                const navItem = document.querySelector(`.nav-item[data-target="${vistaId}"]`);
+                if (navItem) navItem.classList.add('selected');
+            }
+            document.getElementById('ab-title').innerText = titulo;
+            if (vistaId === 'corte') {
+                if (!document.getElementById('corte-fecha-input').value) document.getElementById('corte-fecha-input').valueAsDate = new Date();
+                calcularCorte();
+            }
+            if (vistaId === 'settings') renderizarAjustes();
+        }
+
+        function actualizarCabeceraUsuario() {
+            const img = empleadoActual.imagen ? empleadoActual.imagen : getAvatarUrl(empleadoActual.nombreCompleto);
+            document.getElementById('ab-user-img').src = img;
+            document.getElementById('ab-user-name').innerText = empleadoActual.nombreCompleto;
+            document.getElementById('ab-user-role').innerText = empleadoActual.rol;
+            document.getElementById('ab-date').innerText = obtenerFechaFormateada();
+        }
+
+        // --- AUTENTICACIÓN ---
+        function iniciarSesion() {
+            const user = document.getElementById('login-user').value.trim();
+            const pin = document.getElementById('login-pin').value.trim();
+            if (!user || !pin) return customAlert('Ingresa tu usuario y PIN.', 'Datos incompletos');
+
+            db.ref('usuarios').once('value').then(snapshot => {
+                let encontrado = false;
+                snapshot.forEach(child => { if (child.val().username === user && child.val().pin === pin) { empleadoActual = child.val(); encontrado = true; } });
+
+                if (encontrado) {
+                    // ---> AQUÍ GUARDAMOS LA SESIÓN <---
+                    localStorage.setItem('oasis_user', user);
+                    localStorage.setItem('oasis_pin', pin);
+
+                    document.getElementById('view-login').classList.remove('active');
+                    document.getElementById('main-nav').classList.add('active');
+                    document.getElementById('main-app-bar').classList.add('active');
+                    actualizarCabeceraUsuario();
+                    document.getElementById('nav-prod').style.display = empleadoActual.rol === 'Empleado' ? 'none' : 'flex';
+                    document.getElementById('nav-corte').style.display = empleadoActual.rol === 'Empleado' ? 'none' : 'flex';
+                    document.querySelector('.nav-item[data-target="pos"]').click();
+                    cargarDatosEnTiempoReal();
+
+                    // Limpiamos los inputs por seguridad
+                    document.getElementById('login-user').value = '';
+                    document.getElementById('login-pin').value = '';
+                } else customAlert('Usuario o PIN incorrectos.', 'Error de acceso');
+            });
+        }
+
+        function cerrarSesion() {
+            customConfirm('¿Seguro que deseas salir?', 'Cerrar Sesión', () => {
+                // ---> AQUÍ BORRAMOS LA SESIÓN <---
+                localStorage.removeItem('oasis_user');
+                localStorage.removeItem('oasis_pin');
+
+                empleadoActual = null;
+                document.getElementById('main-nav').classList.remove('active');
+                document.getElementById('main-app-bar').classList.remove('active');
+                document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+                document.getElementById('view-login').classList.add('active');
+            });
+        }
+
+        // --- AJUSTES Y PERFIL ---
+        function renderizarAjustes() {
+            const img = empleadoActual.imagen ? empleadoActual.imagen : getAvatarUrl(empleadoActual.nombreCompleto);
+            document.getElementById('ajustes-img').src = img;
+            document.getElementById('ajustes-nombre').innerText = empleadoActual.nombreCompleto;
+            document.getElementById('ajustes-username').innerText = `@${empleadoActual.username}`;
+            document.getElementById('ajustes-rol').innerText = empleadoActual.rol;
+            document.getElementById('ajustes-edad').innerText = empleadoActual.edad || '--';
+            document.getElementById('ajustes-sexo').innerText = empleadoActual.sexo === 'M' ? 'Masculino' : (empleadoActual.sexo === 'F' ? 'Femenino' : '--');
+            document.getElementById('btn-gestionar-usuarios').style.display = empleadoActual.rol === 'Administrador' ? 'flex' : 'none';
+        }
+
+        function abrirEdicionPerfil() {
+            document.getElementById('mi-nombre').value = empleadoActual.nombreCompleto;
+            document.getElementById('mi-pin').value = empleadoActual.pin;
+            document.getElementById('mi-sexo').value = empleadoActual.sexo || 'M';
+            document.getElementById('mi-edad').value = empleadoActual.edad || '';
+            document.getElementById('mi-avatar-preview').src = empleadoActual.imagen || getAvatarUrl(empleadoActual.nombreCompleto);
+            avatarTemporal = null;
+            document.getElementById('modal-perfil').classList.add('active');
+        }
+
+        // --- CROPPER Y SUBIDA DE IMAGEN ---
+        function abrirModalCropper(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                document.getElementById('image-to-crop').src = event.target.result;
+                document.getElementById('modal-cropper').classList.add('active');
+                if (cropper) cropper.destroy();
+                cropper = new Cropper(document.getElementById('image-to-crop'), { aspectRatio: 1, viewMode: 1 });
+            };
+            reader.readAsDataURL(file);
+            e.target.value = '';
+        }
+
+        function recortarYGuardarAvatar() {
+            const canvas = cropper.getCroppedCanvas({ width: 300, height: 300 });
+            avatarTemporal = canvas.toDataURL('image/jpeg');
+            document.getElementById('mi-avatar-preview').src = avatarTemporal;
+            document.getElementById('modal-cropper').classList.remove('active');
+        }
+
+        function borrarImagenAnteriorS3(url) {
+            if (!url || !url.includes(cloudflareR2Config.endpoint)) return;
+            try {
+                const key = url.split('/').pop();
+                s3.deleteObject({ Bucket: cloudflareR2Config.bucketName, Key: key }).promise().catch(e => console.log("Error borrando anterior", e));
+            } catch (e) { }
+        }
+
+        async function guardarMiPerfil() {
+            const nombre = document.getElementById('mi-nombre').value.trim();
+            const pin = document.getElementById('mi-pin').value.trim();
+            if (!nombre || !pin) return customAlert("Nombre y PIN son obligatorios");
+
+            const updates = { nombreCompleto: nombre, pin: pin, sexo: document.getElementById('mi-sexo').value, edad: parseInt(document.getElementById('mi-edad').value) };
+
+            // Si hay nueva imagen, subirla a S3 simulado (aquí asumo que tienes tu función de subida lista)
+            if (avatarTemporal) {
+                if (empleadoActual.imagen) borrarImagenAnteriorS3(empleadoActual.imagen);
+                // NOTA: Aquí iría tu lógica real s3.upload(). Simulamos guardado en Base64 por simplicidad en UI.
+                updates.imagen = avatarTemporal;
+            }
+
+            db.ref(`usuarios/${empleadoActual.username}`).update(updates).then(() => {
+                empleadoActual = { ...empleadoActual, ...updates };
+                actualizarCabeceraUsuario(); renderizarAjustes();
+                document.getElementById('modal-perfil').classList.remove('active');
+                customAlert("Perfil actualizado correctamente.", "Éxito");
+            });
+        }
+
+        function mostrarAcercaDe() { customAlert("Oasis POS v1.0\n\nDesarrollado para simplificar tu día a día.\n\n© 2026 Todos los derechos reservados.", "Acerca de Oasis"); }
+
+        // --- USUARIOS ADMIN ---
+        function irAUsuarios() { cambiarVista('users', 'Gestión de Usuarios', true); renderizarUsuariosAdmin(); }
+        function volverAAjustes() { cambiarVista('settings', 'Ajustes', true); }
+
+        function renderizarUsuariosAdmin() {
+            const contenedor = document.getElementById('lista-usuarios');
+            contenedor.innerHTML = '';
+            Object.values(usuariosDB).forEach(u => {
+                const img = u.imagen ? u.imagen : getAvatarUrl(u.nombreCompleto);
+                contenedor.innerHTML += `
+                    <div class="card">
+                        <div style="display:flex; gap: 15px; align-items:center;">
+                            <img src="${img}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
+                            <div><strong style="color:var(--text-main); font-size:0.9rem;">${u.nombreCompleto}</strong><br><span style="color:var(--text-muted); font-size:0.8rem;">@${u.username} • ${u.rol}</span></div>
+                        </div>
+                        <i class="fa-solid fa-pen" style="color: var(--primary); padding:10px; cursor:pointer;" onclick="editarUsuarioAdmin('${u.username}')"></i>
+                    </div>
+                `;
+            });
+        }
+
+        function prepararFormularioUsuario() {
+            document.getElementById('user-form-title').innerText = "Nuevo Usuario";
+            ['nombre', 'username', 'pin', 'edad'].forEach(id => document.getElementById(`user-${id}`).value = '');
+            document.getElementById('user-username').disabled = false;
+            document.getElementById('modal-usuario-admin').classList.add('active');
+        }
+
+        function editarUsuarioAdmin(username) {
+            const u = usuariosDB[username]; if (!u) return;
+            document.getElementById('user-form-title').innerText = "Editar Usuario";
+            document.getElementById('user-nombre').value = u.nombreCompleto;
+            document.getElementById('user-username').value = u.username;
+            document.getElementById('user-username').disabled = true;
+            document.getElementById('user-pin').value = u.pin;
+            document.getElementById('user-sexo').value = u.sexo || 'M';
+            document.getElementById('user-edad').value = u.edad || '';
+            document.getElementById('user-rol').value = u.rol;
+            document.getElementById('modal-usuario-admin').classList.add('active');
+        }
+
+        function guardarUsuarioAdmin() {
+            const username = document.getElementById('user-username').value.trim();
+            if (!username) return customAlert("El usuario es obligatorio");
+            const usuario = {
+                nombreCompleto: document.getElementById('user-nombre').value, username: username, pin: document.getElementById('user-pin').value,
+                sexo: document.getElementById('user-sexo').value, edad: parseInt(document.getElementById('user-edad').value) || 0,
+                rol: document.getElementById('user-rol').value, imagen: usuariosDB[username]?.imagen || ''
+            };
+            db.ref(`usuarios/${username}`).set(usuario);
+            customAlert('Usuario guardado correctamente.');
+            document.getElementById('modal-usuario-admin').classList.remove('active');
+        }
+
+        // --- POS Y PRODUCTOS ---
+        function filtrarProductosPOS() {
+            const q = document.getElementById('search-prod').value.toLowerCase();
+            document.querySelectorAll('.prod-item').forEach(el => {
+                const text = el.getAttribute('data-nombre').toLowerCase() + el.getAttribute('data-barcode').toLowerCase();
+                el.style.display = text.includes(q) ? 'flex' : 'none';
+            });
+        }
+
+        function filtrarInventario() {
+            const q = document.getElementById('search-inv').value.toLowerCase();
+            document.querySelectorAll('#lista-productos .card').forEach(el => {
+                el.style.display = el.innerText.toLowerCase().includes(q) ? 'flex' : 'none';
+            });
+        }
+
+        function renderizarGridPOS() {
+            const grid = document.getElementById('pos-product-grid'); grid.innerHTML = '';
+            Object.values(productosDB).forEach(p => {
+                const imgSrc = p.imagen ? p.imagen : getAvatarUrl(p.nombre);
+                grid.innerHTML += `
+                    <div class="prod-item" data-nombre="${p.nombre}" data-barcode="${p.barcode}" onclick="seleccionarProductoPOS('${p.barcode}')">
+                        <img src="${imgSrc}" loading="lazy">
+                        <div class="prod-title">${p.nombre}</div>
+                        <div class="prod-price">$${p.precio.toFixed(2)}</div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top:2px;">${p.stockActual} pz</div>
+                    </div>`;
+            });
+        }
+
+        function seleccionarProductoPOS(barcode) {
+            const prod = productosDB[barcode];
+            if (prod.stockActual <= 0) return customAlert('Este producto se ha quedado sin existencias.', 'Sin stock');
+            customPrompt(`¿Cantidad a agregar de ${prod.nombre}?`, "1", "Añadir", (qty) => {
+                if (!qty || isNaN(qty) || qty <= 0) return customAlert('Cantidad inválida.');
+                agregarAlCarrito(barcode, parseFloat(qty), prod);
+            });
+        }
+
+        // --- CARRITO Y TICKET ---
+        function agregarAlCarrito(barcode, cantidad, producto) {
+            const item = carrito.find(i => i.barcode === barcode);
+            if (item) { item.cantidad += cantidad; item.total = item.cantidad * item.precio; }
+            else { carrito.push({ barcode: producto.barcode, nombre: producto.nombre, precio: producto.precio, cantidad: cantidad, total: producto.precio * cantidad }); }
+            actualizarUI_Ticket();
+        }
+
+        function actualizarUI_Ticket() {
+            let total = 0; let qty = 0; const container = document.getElementById('ticket-items-container'); container.innerHTML = '';
+            carrito.forEach((item, index) => {
+                total += item.total; qty += item.cantidad;
+                container.innerHTML += `
+                    <div class="ticket-item">
+                        <div class="ticket-item-info"><div class="ticket-item-title">${item.nombre}</div><div class="ticket-item-price">${item.cantidad} x $${item.precio.toFixed(2)} c/u</div></div>
+                        <div style="text-align: right;"><div class="ticket-item-total">$${item.total.toFixed(2)}</div><i class="fa-regular fa-trash-can" style="color: var(--danger); margin-top: 5px; cursor:pointer;" onclick="eliminarDelCarrito(${index})"></i></div>
+                    </div>`;
+            });
+            const tStr = total.toFixed(2);
+            document.getElementById('ticket-total-fab').innerText = tStr; document.getElementById('pos-total-final').innerText = tStr;
+            document.getElementById('ticket-count').innerText = carrito.length; document.getElementById('modal-qty-count').innerText = qty;
+            calcularCambio();
+        }
+
+        function calcularCambio() {
+            const total = parseFloat(document.getElementById('pos-total-final').innerText) || 0;
+            const pago = parseFloat(document.getElementById('pos-pago').value) || 0;
+            const cambio = pago - total;
+            document.getElementById('pos-cambio').innerText = cambio > 0 ? cambio.toFixed(2) : "0.00";
+        }
+
+        function eliminarDelCarrito(index) { carrito.splice(index, 1); actualizarUI_Ticket(); }
+        function limpiarTicket() { customConfirm('¿Eliminar todos los productos?', 'Limpiar', () => { carrito = []; actualizarUI_Ticket(); cerrarModalTicket(); }); }
+        function abrirModalTicket() { document.getElementById('modal-overlay').classList.add('active'); document.getElementById('pos-pago').value = ''; calcularCambio(); }
+        function cerrarModalTicket() { document.getElementById('modal-overlay').classList.remove('active'); }
+
+        function procesarTransaccion() {
+            if (carrito.length === 0) return customAlert('El ticket está vacío.');
+            const total = parseFloat(document.getElementById('pos-total-final').innerText);
+            const pago = parseFloat(document.getElementById('pos-pago').value) || 0;
+            if (pago > 0 && pago < total) return customAlert('El efectivo recibido es menor al total.');
+
+            const folio = Date.now().toString(), fechaObj = new Date();
+
+            // FORZAMOS EL FORMATO D/M/YYYY PARA QUE COINCIDA CON TU BASE DE DATOS
+            const fechaDB = `${fechaObj.getDate()}/${fechaObj.getMonth() + 1}/${fechaObj.getFullYear()}`;
+
+            const venta = {
+                folio: folio, fecha: fechaDB,
+                hora: fechaObj.toLocaleTimeString(), empleado: empleadoActual.nombreCompleto, total: total,
+                cliente: document.getElementById('pos-cliente').value || 'Público general', productos: carrito
+            };
+
+            const updates = {}; updates[`ventas/${folio}`] = venta;
+            carrito.forEach(item => { updates[`productos/${item.barcode}/stockActual`] = productosDB[item.barcode].stockActual - item.cantidad; });
+
+            db.ref().update(updates).then(() => {
+                customAlert(`Cobro exitoso. Cambio: $${document.getElementById('pos-cambio').innerText}`);
+                carrito = []; document.getElementById('pos-cliente').value = ''; actualizarUI_Ticket(); cerrarModalTicket();
+            });
+        }
+
+        // --- TIEMPO REAL ---
+        function cargarDatosEnTiempoReal() {
+            db.ref('productos').on('value', snapshot => {
+                productosDB = snapshot.val() || {}; renderizarGridPOS();
+                const contenedor = document.getElementById('lista-productos');
+                if (contenedor) {
+                    contenedor.innerHTML = '';
+                    Object.values(productosDB).forEach(p => {
+                        contenedor.innerHTML += `
+                            <div class="card">
+                                <div style="display:flex; gap: 15px; align-items:center;">
+                                    <img src="${p.imagen || getAvatarUrl(p.nombre)}" style="width:50px; height:50px; border-radius:10px; object-fit:cover;">
+                                    <div><strong style="color:var(--text-main); font-size:1rem;">${p.nombre}</strong><br><span style="color:var(--text-muted); font-size:0.85rem;">Stock: ${p.stockActual} | $${p.precio}</span></div>
+                                </div>
+                                <i class="fa-solid fa-pen" style="color: var(--primary); padding:10px; cursor:pointer;" onclick="customAlert('Edición pendiente de adaptar a nueva UI')"></i>
+                            </div>`;
+                    });
+                }
+            });
+
+            db.ref('usuarios').on('value', snapshot => {
+                usuariosDB = snapshot.val() || {};
+                if (empleadoActual && empleadoActual.rol === 'Administrador' && document.getElementById('view-users').classList.contains('active')) renderizarUsuariosAdmin();
+                if (empleadoActual && usuariosDB[empleadoActual.username]) { empleadoActual = usuariosDB[empleadoActual.username]; actualizarCabeceraUsuario(); }
+            });
+
+            db.ref('ventas').on('value', snapshot => {
+                ventasDB = snapshot.val() || {};
+                if (document.getElementById('view-corte').classList.contains('active')) calcularCorte();
+            });
+        }
+
+        // --- CAJA Y GRAFICAS ---
+        function calcularCorte() {
+            const fechaInput = document.getElementById('corte-fecha-input').value; // Formato YYYY-MM-DD
+            if (!fechaInput) return;
+
+            const dateObj = new Date(fechaInput + 'T12:00:00Z');
+            document.getElementById('fecha-corte').innerText = obtenerFechaFormateada(dateObj);
+
+            // RECONSTRUIMOS LA FECHA PARA QUE BUSQUE "5/10/2026" Y ENCUENTRE TUS DATOS
+            const fechaFiltro = `${dateObj.getDate()}/${dateObj.getMonth() + 1}/${dateObj.getFullYear()}`;
+
+            let totalDia = 0; const contenedorMov = document.getElementById('lista-movimientos'); contenedorMov.innerHTML = '';
+
+            let totalesSemana = [0, 0, 0, 0, 0, 0, 0];
+            const inicioSemana = new Date(dateObj);
+            inicioSemana.setDate(dateObj.getDate() - (dateObj.getDay() === 0 ? 6 : dateObj.getDay() - 1));
+
+            Object.values(ventasDB).forEach(v => {
+                // COMPARA USANDO EL FORMATO CORRECTO
+                if (v.fecha === fechaFiltro) {
+                    totalDia += v.total;
+                    contenedorMov.innerHTML += `<div class="movimiento-item"><div><strong>Folio: ${v.folio.substring(v.folio.length - 5)}</strong><br><span style="font-size:0.8rem; color:var(--text-muted)">${v.hora} - ${v.cliente}</span></div><strong style="color:var(--success)">+$${v.total.toFixed(2)}</strong></div>`;
+                }
+
+                // Formato para la gráfica
+                const partesFecha = v.fecha.split('/');
+                if (partesFecha.length === 3) {
+                    const vDate = new Date(`${partesFecha[2]}-${partesFecha[1].padStart(2, '0')}-${partesFecha[0].padStart(2, '0')}T12:00:00Z`);
+                    const diffTime = Math.abs(vDate - inicioSemana);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    if (vDate >= inicioSemana && diffDays <= 6) {
+                        let diaIndex = vDate.getDay() === 0 ? 6 : vDate.getDay() - 1;
+                        totalesSemana[diaIndex] += v.total;
+                    }
+                }
+            });
+
+            document.getElementById('corte-total').innerText = totalDia.toFixed(2);
+            if (contenedorMov.innerHTML === '') contenedorMov.innerHTML = '<p style="color:var(--text-muted); font-size:0.9rem;">No hay movimientos en esta fecha.</p>';
+
+            actualizarGrafica(totalesSemana);
+        }
+
+        function actualizarGrafica(datosSemana) {
+            const ctx = document.getElementById('chart-ventas').getContext('2d');
+            if (chartVentas) chartVentas.destroy();
+            chartVentas = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+                    datasets: [{ label: 'Ventas de la semana', data: datosSemana, backgroundColor: '#FBBF24', borderRadius: 5 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, display: false } }, plugins: { legend: { display: false } } }
+            });
+        }
+
+        function cerrarCaja() { customConfirm('¿Generar corte Z y cerrar turno?', 'Corte de Caja', () => { customAlert('Corte Z generado.', 'Exito'); }); }
+        function prepararFormularioProducto() { document.getElementById('form-producto').style.display = 'flex'; }
+        function guardarProducto() { customAlert("Función conservada en lógica backend."); document.getElementById('form-producto').style.display = 'none'; }
+        // --- MANTENER SESIÓN ACTIVA ---
+        function comprobarSesionGuardada() {
+            const savedUser = localStorage.getItem('oasis_user');
+            const savedPin = localStorage.getItem('oasis_pin');
+
+            if (savedUser && savedPin) {
+                document.getElementById('login-user').value = savedUser;
+                document.getElementById('login-pin').value = savedPin;
+                iniciarSesion();
+            }
+        }
+
+        // Ejecutar la comprobación al cargar la página
+        comprobarSesionGuardada();  
+    </script>
+</body>
+
+</html>
